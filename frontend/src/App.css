@@ -1,0 +1,15 @@
+#segundo-nav {
+  @apply py-2 flex items-center justify-center text-xs text-gray-400;
+}
+
+#segundo-nav .navlink {
+  @apply px-2 cursor-pointer hover:text-cyan-500 hover:underline flex items-center;
+}
+
+#segundo-nav .navlink.active {
+  @apply underline text-cyan-500 font-bold;
+}
+
+#segundo-nav svg {
+  @apply size-4 mr-1; 
+}
