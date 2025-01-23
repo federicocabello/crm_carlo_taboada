@@ -1,0 +1,47 @@
+.tab-div {
+    @apply flex items-center
+}
+
+.tab-div-img {
+    @apply size-5 mr-1
+}
+
+.tab-panel-perfil input, .tab-panel-perfil select {
+    @apply border rounded p-1 uppercase
+ }
+
+ .section-datos p {
+    @apply mb-4
+ }
+
+ .section-datos input {
+    @apply w-80
+ }
+
+ .section-datos span {
+    @apply w-32 inline-block text-right mr-2
+ }
+
+ .table-perfil-casos {
+   @apply w-full
+ }
+
+ .table-perfil-casos tbody th {
+   @apply text-left font-normal
+ }
+
+ .table-perfil-casos tbody tr, .table-perfil-casos thead th {
+   @apply border
+ }
+
+ .table-perfil-casos tbody tr {
+   @apply hover:bg-orange-100 cursor-pointer
+ }
+
+ .table-perfil-casos thead tr {
+   @apply bg-orange-300 text-orange-800
+ }
+
+ .th-caso-id {
+   @apply font-bold text-orange-800 !important
+ }

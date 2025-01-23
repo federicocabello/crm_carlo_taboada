@@ -1,0 +1,15 @@
+.select-cap {
+    @apply w-80
+}
+
+.input-cap {
+    @apply w-96 uppercase
+}
+
+.contenedor-grande {
+    @apply flex text-xs justify-center
+}
+
+.contenedor-grande div input, .contenedor-grande div select {
+    @apply p-2 text-base border rounded
+}

@@ -1,0 +1,31 @@
+.table-gestion-de-leads, .table-gestion-de-clientes {
+    @apply table-auto bg-white border rounded-lg shadow-md w-full text-sm !important
+  }
+  
+  .table-gestion-de-leads tbody td, .table-gestion-de-clientes tbody td {
+    @apply px-2
+  }
+  
+  .table-gestion-de-leads tbody tr {
+    @apply border hover:bg-blue-100 odd:bg-gray-300
+  }
+  
+  .table-gestion-de-leads thead th {
+    @apply text-blue-800 bg-blue-300 border
+  }
+  
+  .table-gestion-de-clientes tbody tr {
+    @apply border hover:bg-green-100 odd:bg-gray-300
+  }
+  
+  .table-gestion-de-clientes thead th {
+    @apply text-green-800 bg-green-400 border
+  }
+  
+  .filtros-leads th, .table-gestion-de-clientes .filtros-clientes th {
+    @apply bg-gray-100 text-left !important
+  }
+  
+  .filtros-leads input, .filtros-leads select, .table-gestion-de-clientes .filtros-clientes input, .table-gestion-de-clientes .filtros-clientes select {
+    @apply rounded text-black italic text-sm font-normal p-1 w-full
+  }

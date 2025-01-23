@@ -1,0 +1,92 @@
+/* Contenedor del Calendario */
+.fc {
+  background-color: #f9fafb; /* Fondo claro */
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  font-size: 11px;
+}
+
+/* Barra de herramientas */
+.fc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.fc-toolbar h2 {
+  font-size: 1.5rem;
+  color: #374151;
+}
+
+.fc-toolbar button {
+  background-color: #3b82f6;
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.fc-toolbar button:hover {
+  background-color: #2563eb;
+}
+
+/* Tabla de días */
+.fc-daygrid-day {
+  border: 1px solid #e5e7eb;
+  text-align: center;
+  vertical-align: top;
+  padding: 4px;
+  position: relative;
+  cursor: pointer;
+}
+
+.fc-daygrid-day-number {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.fc-day-today {
+  font-weight: 700;
+  border: 2px solid #374151 !important;
+}
+
+/* Eventos
+.fc-event {
+  background-color: #f87171;
+  color: white;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+.fc-event:hover {
+  background-color: #ef4444;
+}
+*/
+
+.day-with-event {
+  background-color: pink !important;
+}
+
+.selected-day {
+  position: relative;
+}
+
+.selected-day::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #60a5fa;
+  border-radius: 50%;
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+}

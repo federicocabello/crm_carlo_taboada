@@ -1,0 +1,23 @@
+.tab-caso-informacion-div {
+    @apply w-full mb-5 flex
+}
+
+.tab-caso-informacion-div input, .tab-caso-informacion-div select, .tab-caso-informacion-div textarea, .tab-beneficiario div div input {
+    @apply p-1 rounded border
+}
+
+.tab-caso-informacion-div input, .tab-caso-informacion-div textarea, .tab-div-beneficiario input {
+    @apply uppercase
+}
+
+.tab-beneficiario div {
+    @apply flex justify-around items-center mb-1
+}
+
+.tab-beneficiario div span {
+    @apply w-32 text-right mr-2
+}
+
+.tab-beneficiario div input {
+    @apply w-96 uppercase
+}
