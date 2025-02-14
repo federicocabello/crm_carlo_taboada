@@ -159,6 +159,10 @@ const GestionDeLeads = () => {
     const handleProfile = (id) => {
         navigate(`/perfil/${id}`);
     };
+
+    const handleCaso = (id) => {
+        navigate(`/caso/${id}`);
+    };
     
     return (
         <div>
@@ -259,7 +263,7 @@ const GestionDeLeads = () => {
                         <th>Oficina</th>
                         <th>Fuente</th>
                         <th>Tipo de caso</th>
-                        <th>Status cita</th>
+                        <th>Status y razón de cita</th>
                         <th>Asignado a</th>
                         <th>¿Califica?</th>
                         <th>Creado por</th>
@@ -267,11 +271,11 @@ const GestionDeLeads = () => {
                 </thead>
                 <tbody>
                 {currentLeads.map((lead) => (
-                    <tr key={lead.id}>
+                    <tr key={lead.idcliente}>
                         <td className='text-xs text-center'>{lead.fecha}</td>
                         <td>
-                            <div className="text-blue-800 font-bold cursor-pointer" onClick={() => handleProfile(lead.id)}>
-                                {lead.nombre}
+                            <div className="text-blue-800 font-bold cursor-pointer hover:underline" onClick={() => handleProfile(lead.idcliente)}>
+                                {lead.nombrec}
                             </div>
                             {lead.telefonoUno &&
                             <div className="flex items-center">
@@ -296,7 +300,7 @@ const GestionDeLeads = () => {
                         </td>
                         <td>{lead.oficina}</td>
                         <td>{lead.referido}</td>
-                        <td>{lead.tipocaso}</td>
+                        <td><div className="font-bold bg-gray-600 cursor-pointer hover:bg-gray-300 hover:text-gray-600 text-center w-full border rounded-xl text-white transition-all hover:border-gray-600" onClick={() => handleCaso(lead.idcaso)}>{lead.tipocaso}</div></td>
                         <td>
                             {lead.statuscita}
                             {lead.razoncita &&

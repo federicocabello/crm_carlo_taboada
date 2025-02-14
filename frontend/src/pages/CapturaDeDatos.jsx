@@ -11,7 +11,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 
 import esLocale from '@fullcalendar/core/locales/es';
 
-const CapturaDeDatos = () => {
+const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso, onDateHourSelect}) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const nombreInputRef = useRef(null);
     const navigate = useNavigate();
@@ -37,10 +37,10 @@ const CapturaDeDatos = () => {
     const [files, setFiles] = useState([]);
     
     const [events, setEvents] = useState([]);
-    const [selectedDate, setSelectedDate] = useState("");
+    const [selectedDate, setSelectedDate] = useState('');
     const [freeHours, setFreeHours] = useState([]);
     const [rawData, setRawData] = useState([]);
-    const [selectedHour, setSelectedHour] = useState("");
+    const [selectedHour, setSelectedHour] = useState('');
 
     const schedule = [
         { hour: "09:30:00", maxAppointments: 3 },
@@ -103,6 +103,13 @@ const handleClickHour = (hour) => {
     setSelectedHour(hour);
 }
 
+const handleClickHourCita = (hour) => {
+    setSelectedHour(hour);
+    if (selectedDate) {
+        onDateHourSelect(selectedDate, hour);
+    }
+};
+
     const handleEnviar =  (e) => {
             e.preventDefault();
 
@@ -143,6 +150,42 @@ const handleClickHour = (hour) => {
         });
     };
 
+    const handleEnviarNuevaConsulta =  (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('idcliente', idCliente);
+        formData.append('nombre', nombreCliente);
+        formData.append('razonCita', razonCita);
+        formData.append('selectedHour', selectedHour);
+        formData.append('selectedDate', selectedDate);
+        formData.append('selectedTipoCita', selectedTipoCita);
+        formData.append('selectedAsesor', selectedAsesor);
+        formData.append('selectedTipoCaso', selectedTipoCaso);
+
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
+        
+        axios.post(`${backendUrl}/consultas/nueva`, formData, {
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+        .then((response) => {
+            if (response.data.status === 200){
+            console.log(response.data.mensaje);
+            alert(response.data.mensaje);
+            navigate('/gestion-de-leads');
+            }
+        })
+        .catch ((error) => {
+        console.error("Error al guardar nueva consulta. Reintente.", error.response?.data?.message || error.message);
+        alert("Error al guardar nueva consulta. Hay faltantes o erróneos. Reintente.");
+    });
+};
+
     const formatDate = (dateString) => {
         const date = new Date(dateString + "T00:00:00");
         //console.log(dateString)
@@ -155,21 +198,34 @@ const handleClickHour = (hour) => {
         }).format(date);
     }
 
+    const formatHour = (hourString) => {
+        const [hour, minute] = hourString.split(":").map(Number);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+        return `${formattedHour}:${minute < 10 ? '0' : ''}${minute} ${ampm}`;
+    };
+
 return (
     <div>
+        {!editarCitaCaso ? (
         <div className="contenedor-grande">
 
             <div className="mr-4 grid">
+                {!nuevaConsulta && (
                 <div className="mb-2">
                 <div>Nombre</div>
                 <input className="input-cap" type="text" ref={nombreInputRef} onChange={(e) => setNombre(e.target.value)} />
                 </div>
+                )}
 
+                {!nuevaConsulta && (
                 <div className="mb-2">
                 <div>Teléfono 1</div>
                 <input className="input-cap" type="text" onChange={(e) => setTelefonoUno(e.target.value)} />
                 </div>
+                )}
 
+                {!nuevaConsulta && (
                 <div className="mb-2">
                         <div>Teléfono 2</div>
                         <input className="input-cap" type="text" onChange={(e) => setTelefonoDos(e.target.value)} />
@@ -177,10 +233,14 @@ return (
                             <input className="input-cap" type="text" placeholder="Pertenece a..." onChange={(e) => setPertenece(e.target.value)} />
                         </div>
                 </div>
-
+                )}
                 <div className="mb-2">
                 <div>Razón de la cita</div>
-                <textarea className="w-96 h-32 p-2 border rounded resize-none uppercase" onChange={(e) => setRazonCita(e.target.value)}></textarea>
+                {!nuevaConsulta ? (
+                    <textarea className="w-96 h-32 p-2 border rounded resize-none uppercase" onChange={(e) => setRazonCita(e.target.value)}></textarea>
+                ) : (
+                    <textarea className="w-96 h-80 p-2 border rounded resize-none uppercase" onChange={(e) => setRazonCita(e.target.value)}></textarea>
+                )}
                 </div>
 
                 <div className="flex items-end">
@@ -189,12 +249,17 @@ return (
                         <input type="file" className="w-full" style={{ fontSize: '11px' }} multiple onChange={handleFileChange} />
                     </div>
                     <div className="w-1/2 ml-2">
+                    {!nuevaConsulta ? (
                         <button type="button" className="btn-guardar w-full" onClick={handleEnviar}>Guardar</button>
+                    ) : (
+                        <button type="button" className="btn-guardar w-full" onClick={handleEnviarNuevaConsulta}>Guardar</button>
+                    )}
                     </div>
                 </div>
             </div>
 
             <div className="mr-4 grid">
+                {!nuevaConsulta && (
                 <div className="mb-2">
                     <div>Oficina</div>
                     <select className="select-cap" onChange={(e) => setSelectedOficina(e.target.value)}>
@@ -204,7 +269,9 @@ return (
                         ))}
                     </select>
                 </div>
+                )}
 
+                {!nuevaConsulta && (
                 <div className="mb-2">
                     <div>Fuente</div>
                     <select className="select-cap" onChange={(e) => setSelectedReferido(e.target.value)}>
@@ -214,6 +281,7 @@ return (
                         ))}
                     </select>
                 </div>
+                )}
 
                 <div className="mb-2">
                     <div>Tipo de caso</div>
@@ -247,7 +315,7 @@ return (
 
                 <div>
                     <div>Cita</div>
-                    <input type="text" className="w-80 border-none text-cyan-500 bg-gray-100 font-bold uppercase" value={selectedDate && selectedHour ? `${formatDate(selectedDate)} a las ${selectedHour.split(":").slice(0, 2).join(":")}` : "Seleccione fecha y hora en el calendario..." } disabled />
+                    <input type="text" className="w-80 border-none text-cyan-500 bg-gray-100 font-bold uppercase" value={selectedDate && selectedHour ? `${formatDate(selectedDate)} a las ${formatHour(selectedHour)}` : "Seleccione fecha y hora en el calendario..." } disabled />
                 </div>
             </div>
 
@@ -286,7 +354,7 @@ return (
                     {selectedDate ? (
                         freeHours.length > 0 ? (
                             <div className="px-4 text-base w-64 text-center">
-                                <h3>Fecha: {formatDate(selectedDate)}</h3>
+                                <div className="underline font-bold p-1 text-blue-400 text-center text-base">Horarios disponibles</div>
                                     <ul className="grid grid-cols-2 gap-2 mt-2">
                                     {freeHours.map((hour, index) => (
                                         <li className={`cursor-pointer border font-bold rounded border-blue-400 p-1 text-blue-400 text-center hover:bg-blue-400 hover:text-white transition-all duration-200 ${selectedHour === hour ? "bg-blue-400 text-white" : "bg-none"}`} key={index} onClick={() => handleClickHour(hour)}>{hour.split(":").slice(0, 2).join(":")}</li>
@@ -295,15 +363,69 @@ return (
                             </div>
                         
                     ) : (
-                        <div className="underline font-bold p-2 text-red-400 text-center text-base">No hay horarios libres para este día.</div>
+                        <div className="underline font-bold p-2 text-red-500 text-center text-base">No hay horarios libres para este día.</div>
                     ) 
                     ) : (
                         <div hidden></div>
                     )}
                     </span>
                 </div>
-            </div>     
+            </div>
         </div>
+        ) : (
+                    <div>
+                        <div className="flex">
+                        <span className="w-80">
+                        <FullCalendar 
+                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} 
+                        initialView="dayGridMonth" 
+                        dateClick={handleClickDate} 
+                        headerToolbar={{
+                            left: 'prev,next', 
+                            center: 'title', 
+                            right: 'today',
+                        }} 
+                        dayCellClassNames={(date) => {
+                            if (!Array.isArray(rawData)) {
+                                console.error("rawData no es un array:", rawData);
+                                    return "";
+                            }
+        
+                            const isOccupied = rawData.some(
+                                (event) => event.fecha === date.date.toISOString().split("T")[0]
+                            );
+        
+                            const isSelected = selectedDate === date.date.toISOString().split("T")[0];
+        
+                            //return isOccupied ? "day-with-event" : "";
+                            return `${isOccupied ? "day-with-event" : ""} ${isSelected ? "selected-day": ""}`.trim();
+                        }}
+                        locale={esLocale} 
+                        height={400} />
+                        </span>
+                        <span className="w-80">
+                            {selectedDate ? (
+                                freeHours.length > 0 ? (
+                                    <div className="px-4 text-base w-64 text-center">
+                                        <div className="underline font-bold p-1 text-blue-400 text-center text-base">Horarios disponibles</div>
+                                            <ul className="grid grid-cols-2 gap-2 mt-2">
+                                            {freeHours.map((hour, index) => (
+                                                <li className={`cursor-pointer border font-bold rounded border-blue-400 p-1 text-blue-400 text-center hover:bg-blue-400 hover:text-white transition-all duration-200 ${selectedHour === hour ? "bg-blue-400 text-white" : "bg-none"}`} key={index} onClick={() => handleClickHourCita(hour)}>{hour.split(":").slice(0, 2).join(":")}
+                                                </li>
+                                            ))}
+                                            </ul>
+                                    </div>
+                                
+                            ) : (
+                                <div className="underline font-bold p-2 text-red-500 text-center text-base">No hay horarios libres para este día.</div>
+                            ) 
+                            ) : (
+                                <div hidden></div>
+                            )}
+                            </span>
+                        </div>
+                    </div>
+        )}
     </div>
     );
 };

@@ -1,0 +1,15 @@
+.tabla-agenda-citas {
+    @apply w-full bg-white border
+}
+
+.tabla-agenda-citas thead tr th {
+    @apply p-1 border border-white
+}
+
+.tabla-agenda-citas tbody tr {
+    @apply hover:bg-cyan-100 border
+}
+
+.tabla-agenda-citas tbody tr td {
+    @apply p-2
+}

@@ -19,11 +19,11 @@ const GestionDeClientes = () => {
 
     const [oficina, setOficina] = useState([]);
     const [referencia, setReferencia] = useState([]);
-    const [estadoCaso, setEstadoCaso] = useState([]);
+    const [statusCaso, setStatusCaso] = useState([]);
 
     const [filterOficina, setFilterOficina] = useState('');
     const [filterReferencia, setFilterReferencia] = useState('');
-    const [filterEstadoCaso, setFilterEstadoCaso] = useState('');
+    const [filterStatusCaso, setFilterStatusCaso] = useState('');
 
 
     useEffect(() => {
@@ -34,7 +34,7 @@ const GestionDeClientes = () => {
             setFilteredLeads(response.data.resultados.leads);
             setOficina(response.data.selects.oficina);
             setReferencia(response.data.selects.referencia);
-            setEstadoCaso(response.data.selects.estadocaso);
+            setStatusCaso(response.data.selects.statuscaso);
         })
         .catch((error) => {
             console.error("Error al obtener los leads:", error);
@@ -77,14 +77,14 @@ const GestionDeClientes = () => {
     useEffect(() => {
         let filtered = casos;
 
-        if (filterEstadoCaso) {
+        if (filterStatusCaso) {
             filtered = filtered.filter(caso => 
-                caso.estadocaso === filterEstadoCaso
+                caso.status === filterStatusCaso
             );
         }
 
         setFilteredCasos(filtered);
-    }, [filterEstadoCaso, casos]);
+    }, [filterStatusCaso, casos]);
 
     const indexOfLastLead = currentPage * leadsPerPage;
     const indexOfFirstLead = indexOfLastLead - leadsPerPage;
@@ -154,10 +154,10 @@ const GestionDeClientes = () => {
                             />
                         </th>
                         <th>
-                            <select onChange={(e) => setFilterEstadoCaso(e.target.value)}>
+                            <select onChange={(e) => setFilterStatusCaso(e.target.value)}>
                                 <option value="" key="" className="text-gray-400">Filtrar casos...</option>
-                                {estadoCaso.map((item) => (
-                                <option key={item.id} value={item.estadocaso}>{item.estadocaso}</option>
+                                {statusCaso.map((item) => (
+                                <option key={item.id} value={item.statuscaso}>{item.statuscaso}</option>
                                 ))}
                             </select>
                         </th>
@@ -245,8 +245,7 @@ const GestionDeClientes = () => {
                             {casos.filter(caso => caso.idcliente === lead.id).map((caso) => (
                             <div key={caso.idcaso} className="font-bold my-1">
                                 <span className="w-10 inline-block">{caso.idcaso}</span>
-                                {caso.estado == "Abierto" && (<span className="text-white border rounded px-2 bg-green-500">{caso.estado}</span>)}
-                                {caso.estado == "Cerrado" && (<span className="text-white border rounded px-2 bg-red-500">{caso.estado}</span>)}
+                                <span className="text-white border rounded px-2" style={{ backgroundColor: '#'+caso.colorstatuscaso }}>{caso.status}</span>
                             </div>
                             ))}
                             </div>
