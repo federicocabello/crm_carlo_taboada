@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import axios from 'axios';
 import FormatearNumero from '../components/FormatearNumero'
 
-const RegistrarPago = ({idcaso, nombrecaso, idcliente, onClose, idpago, monto, tipos, esSaldo, idcontrol}) => {
+const RegistrarPago = ({idcaso, nombrecaso, idcliente, onClose, idpago, monto, tipos, esSaldo, idcontrol, vencimiento}) => {
     if (!idcaso) return null;
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const [montoDos, setMontoDos] = useState(monto);
@@ -15,12 +15,14 @@ const RegistrarPago = ({idcaso, nombrecaso, idcliente, onClose, idpago, monto, t
             idcaso: idcaso,
             idcliente: idcliente,
             idpago: idpago,
-            monto: montoDos,
+            monto: parseFloat(montoDos),
             tipo: tipo,
             nombre_tarjeta: nombreTarjeta,
             numero_tarjeta: numeroTarjeta,
             esSaldo: esSaldo,
-            idcontrol: idcontrol
+            idcontrol: idcontrol,
+            monto_original: parseFloat(monto),
+            fecha_vencimiento: vencimiento
         };
         axios.post(`${backendUrl}/caso/pago/registrar`, datos, { withCredentials: true })
             .then((response) => {

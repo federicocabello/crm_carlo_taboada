@@ -517,10 +517,12 @@ const Caso = () => {
             const [pagoIdControl, setPagoIdControl] = useState(null);
             const [pagoMonto, setPagoMonto] = useState(null);
             const [esSaldo, setEsSaldo] = useState(false);
-            const abrirRegistrarPago = (idcontrol, monto, esSaldo) => {
+            const [fechaVencimiento, setFechaVencimiento] = useState(null);
+            const abrirRegistrarPago = (idcontrol, monto, esSaldo, vencimiento) => {
                 setEsSaldo(esSaldo);
                 setPagoIdControl(idcontrol);
                 setPagoMonto(monto);
+                setFechaVencimiento(vencimiento);
                 setRegistrarPagoVisible(true);
             }
 
@@ -707,7 +709,15 @@ const Caso = () => {
                                             )}
                                             {actualizaciones.map((item) => (
                                             <div key={item.id} className="my-3 rounded-xl border-2 bg-white">
-                                                    <div className={`text-gray-700 p-2 text-sm flex items-center cursor-pointer ${!item.esresultado == 1 ? 'bg-lime-200' : 'bg-cyan-200'}`} onClick={() => toggleExpand(item.id)}>
+                                                    <div className={`text-gray-700 p-2 text-sm flex items-center cursor-pointer ${
+                                                            item.esresultado === 0
+                                                            ? 'bg-cyan-200'
+                                                            : item.esresultado === 1
+                                                            ? 'bg-lime-200'
+                                                            : item.esresultado === 2
+                                                            ? 'bg-amber-200'
+                                                            : ''
+                                                        }`} onClick={() => toggleExpand(item.id)}>
                                                         {!expandedItems[item.id] ? (
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -717,7 +727,13 @@ const Caso = () => {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
                                                         </svg>
                                                         )}
-                                                        {item.creado} <span className="ml-1 font-bold">{item.agente}</span>{item.esresultado == 1 && <span className="ml-1 font-bold text-white bg-orange-400 px-2 rounded-full border">RESULTADO DE LA CITA</span>}
+                                                        {item.creado} <span className="ml-1 font-bold">{item.agente}</span>
+                                                        {item.esresultado == 1 && (
+                                                            <span className="ml-1 font-bold text-white bg-orange-400 px-2 rounded-full border">RESULTADO DE LA CITA</span>
+                                                        )}
+                                                        {item.esresultado == 2 && (
+                                                            <span className="ml-1 font-bold text-white bg-green-500 px-2 rounded-full border">PAGO</span>
+                                                        )}
                                                     </div>
                                                     {expandedItems[item.id] && (
                                                         <div className="p-2 text-sm">
@@ -1089,7 +1105,7 @@ const Caso = () => {
                                                             <FormatearNumero numero={parseFloat(item.monto)} />
                                                         </span>
                                                         <span>
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-amber-400 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.monto, false)}>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-amber-400 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.monto, false, item.fecha)}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                             </svg>
                                                         </span>
@@ -1102,7 +1118,7 @@ const Caso = () => {
                                 )}
                                 
                                 {registrarPagoVisible && (
-                                    <RegistrarPago idcaso={caso.idcaso} nombrecaso={caso.caso} idcliente={caso.idcliente} onClose={onCloseRegistrarPago} idpago={pagoIdControl} monto={pagoMonto} tipos={tiposdePago} idcontrol={pagosControl.id} esSaldo={esSaldo} />
+                                    <RegistrarPago idcaso={caso.idcaso} nombrecaso={caso.caso} idcliente={caso.idcliente} onClose={onCloseRegistrarPago} idpago={pagoIdControl} monto={pagoMonto} tipos={tiposdePago} idcontrol={pagosControl.id} esSaldo={esSaldo} vencimiento={fechaVencimiento} />
                                 )}
 
                                 {saldoRestante && (
@@ -1126,7 +1142,7 @@ const Caso = () => {
                                                                 <FormatearNumero numero={item.saldo} />
                                                             </span>
                                                             <span>
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-orange-500 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.saldo, true)}>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-orange-500 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.saldo, true, item.fecha)}>
                                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                                 </svg>
                                                             </span>
