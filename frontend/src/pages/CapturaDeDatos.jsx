@@ -27,12 +27,14 @@ const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso
     const [tipoCita, setTipoCita] = useState([]);
     const [asesor, setAsesor] = useState([]);
     const [tipoCaso, setTipoCaso] = useState([]);
+    const [subClase, setSubClase] = useState([]);
     
     const [selectedOficina, setSelectedOficina] = useState('');
     const [selectedTipoCita, setSelectedTipoCita] = useState('');
     const [selectedReferido, setSelectedReferido] = useState('');
     const [selectedAsesor, setSelectedAsesor] = useState('');
     const [selectedTipoCaso, setSelectedTipoCaso] = useState('');
+    const [selectedSubclase, setSelectedSubclase] = useState('');
 
     const [files, setFiles] = useState([]);
     
@@ -41,6 +43,8 @@ const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso
     const [freeHours, setFreeHours] = useState([]);
     const [rawData, setRawData] = useState([]);
     const [selectedHour, setSelectedHour] = useState('');
+    const [fechasBloqueadas, setFechasBloqueadas] = useState([]);
+
 
     const schedule = [
         { hour: "09:30:00", maxAppointments: 3 },
@@ -67,8 +71,8 @@ const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso
                 setTipoCita(response.data.tipocita);
                 setAsesor(response.data.asesores);
                 setTipoCaso(response.data.tipo_caso);
-                const citas = Array.isArray(response.data.citas_calendario)
-                ? response.data.citas_calendario : [];
+                setSubClase(response.data.subclase);
+                const citas = Array.isArray(response.data.citas_calendario) ? response.data.citas_calendario : [];
                 setRawData(citas);
                 const transformedEvents = citas.map((cita) => ({
                     title: `Horas: ${cita.hora}`,
@@ -76,14 +80,26 @@ const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso
                     color: "red",
                 }))
                 setEvents(transformedEvents);
+                setFechasBloqueadas(response.data.fechas_bloqueadas);
             })
             .catch ((error) => {
             console.error("Error al obtener los datos:", error);
         });
-        }, []);
+        }, [backendUrl]);
 
 const handleClickDate = (dateInfo) => {
     const clickedDate = dateInfo.dateStr;
+
+    // Verificar si la fecha está bloqueada
+    const isBlocked = fechasBloqueadas.some(
+        (blockedDate) => new Date(blockedDate.fecha).toISOString().split("T")[0] === clickedDate
+    );
+
+    // Si la fecha está bloqueada, no hacer nada
+    if (isBlocked) {
+        return;
+    }
+
     const dayEvents = rawData.filter((cita) => cita.fecha === clickedDate);
     const occupiedSlots = {};
     dayEvents.forEach((cita) => {
@@ -125,6 +141,7 @@ const handleClickHourCita = (hour) => {
             formData.append('selectedTipoCita', selectedTipoCita);
             formData.append('selectedAsesor', selectedAsesor);
             formData.append('selectedTipoCaso', selectedTipoCaso);
+            formData.append('selectedSubclase', selectedSubclase);
             formData.append('pertenece', pertenece)
 
             for (let i = 0; i < files.length; i++) {
@@ -162,6 +179,7 @@ const handleClickHourCita = (hour) => {
         formData.append('selectedTipoCita', selectedTipoCita);
         formData.append('selectedAsesor', selectedAsesor);
         formData.append('selectedTipoCaso', selectedTipoCaso);
+        formData.append('selectedSubclase', selectedSubclase);
 
         for (let i = 0; i < files.length; i++) {
             formData.append('files', files[i]);
@@ -205,6 +223,42 @@ const handleClickHourCita = (hour) => {
         return `${formattedHour}:${minute < 10 ? '0' : ''}${minute} ${ampm}`;
     };
 
+    const [isFormValid, setIsFormValid] = useState(false);
+
+    const validateForm = () => {
+        const isValid = nombre.trim() !== "" &&
+                        telefonoUno.trim() !== "" &&
+                        razonCita.trim() !== "" &&
+                        selectedOficina !== "" &&
+                        selectedReferido !== "" &&
+                        selectedTipoCaso !== "" &&
+                        selectedAsesor !== "" &&
+                        selectedTipoCita !== "" &&
+                        selectedDate !== "" &&
+                        selectedHour !== "";
+        setIsFormValid(isValid);
+    };
+
+    useEffect(() => {
+        if (nuevaConsulta) {
+            validateFormConsulta()
+        } else {
+            validateForm();
+        }
+    }, [nombre, telefonoUno, razonCita, selectedOficina, selectedReferido, selectedTipoCaso, selectedAsesor, selectedTipoCita, selectedDate, selectedHour]);
+
+    const [isFormValidConsulta, setIsFormValidConsulta] = useState(false);
+
+    const validateFormConsulta = () => {
+        const isValid = razonCita.trim() !== "" &&
+                        selectedTipoCaso !== "" &&
+                        selectedAsesor !== "" &&
+                        selectedTipoCita !== "" &&
+                        selectedDate !== "" &&
+                        selectedHour !== "";
+        setIsFormValidConsulta(isValid);
+    };
+
 return (
     <div>
         {!editarCitaCaso ? (
@@ -213,14 +267,14 @@ return (
             <div className="mr-4 grid">
                 {!nuevaConsulta && (
                 <div className="mb-2">
-                <div>Nombre</div>
+                <div>Nombre<span className="ml-1 text-red-500">(*)</span></div>
                 <input className="input-cap" type="text" ref={nombreInputRef} onChange={(e) => setNombre(e.target.value)} />
                 </div>
                 )}
 
                 {!nuevaConsulta && (
                 <div className="mb-2">
-                <div>Teléfono 1</div>
+                <div>Teléfono 1<span className="ml-1 text-red-500">(*)</span></div>
                 <input className="input-cap" type="text" onChange={(e) => setTelefonoUno(e.target.value)} />
                 </div>
                 )}
@@ -235,7 +289,7 @@ return (
                 </div>
                 )}
                 <div className="mb-2">
-                <div>Razón de la cita</div>
+                <div>Razón de la cita<span className="ml-1 text-red-500">(*)</span></div>
                 {!nuevaConsulta ? (
                     <textarea className="w-96 h-32 p-2 border rounded resize-none uppercase" onChange={(e) => setRazonCita(e.target.value)}></textarea>
                 ) : (
@@ -250,9 +304,9 @@ return (
                     </div>
                     <div className="w-1/2 ml-2">
                     {!nuevaConsulta ? (
-                        <button type="button" className="btn-guardar w-full" onClick={handleEnviar}>Guardar</button>
+                        <button type="button" className={`btn-guardar w-full ${!isFormValid && 'bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-100'}`} onClick={handleEnviar} disabled={!isFormValid}>Guardar</button>
                     ) : (
-                        <button type="button" className="btn-guardar w-full" onClick={handleEnviarNuevaConsulta}>Guardar</button>
+                        <button type="button" className={`btn-guardar w-full ${!isFormValidConsulta && 'bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-100'}`} onClick={handleEnviarNuevaConsulta} disabled={!isFormValidConsulta}>Guardar</button>
                     )}
                     </div>
                 </div>
@@ -261,7 +315,7 @@ return (
             <div className="mr-4 grid">
                 {!nuevaConsulta && (
                 <div className="mb-2">
-                    <div>Oficina</div>
+                    <div>Oficina<span className="ml-1 text-red-500">(*)</span></div>
                     <select className="select-cap" onChange={(e) => setSelectedOficina(e.target.value)}>
                     <option value="" key="" className="text-gray-400 italic">Seleccione una oficina...</option>
                     {oficina.map((item) => (
@@ -273,7 +327,7 @@ return (
 
                 {!nuevaConsulta && (
                 <div className="mb-2">
-                    <div>Fuente</div>
+                    <div>Fuente<span className="ml-1 text-red-500">(*)</span></div>
                     <select className="select-cap" onChange={(e) => setSelectedReferido(e.target.value)}>
                     <option value="" key="" className="text-gray-400 italic">Seleccione una fuente...</option>
                     {referido.map((item) => (
@@ -284,17 +338,29 @@ return (
                 )}
 
                 <div className="mb-2">
-                    <div>Tipo de caso</div>
-                    <select class="select-cap" onChange={(e) => setSelectedTipoCaso(e.target.value)}>
+                    <div>Tipo de caso<span className="ml-1 text-red-500">(*)</span></div>
+                    <select className="select-cap" onChange={(e) => setSelectedTipoCaso(e.target.value)}>
                         <option value="" key="" className="text-gray-400 italic">Seleccione un tipo de caso...</option>
                         {tipoCaso.map((item) => (
                             <option key={item.id} value={item.id}>{item.tipocaso}</option>
                         ))}
                     </select>
+                    {selectedTipoCaso && (
+                    <div>
+                        <select className="select-cap" onChange={(e) => setSelectedSubclase(e.target.value)}>
+                            <option value="" key="" className="text-gray-400 italic">Seleccione una subclase...</option>
+                            {subClase
+                                .filter((sub) => sub.idtipocaso == selectedTipoCaso)
+                                .map((sub) => (
+                                    <option key={sub.idsubclase} value={sub.idsubclase}>{sub.subclase}</option>
+                                ))}
+                        </select>
+                    </div>
+                    )}
                 </div>
 
                 <div className="mb-2">
-                    <div>Asignar a</div>
+                    <div>Asignar a<span className="ml-1 text-red-500">(*)</span></div>
                     <select className="select-cap" onChange={(e) => setSelectedAsesor(e.target.value)}>
                         <option value="" key="" className="text-gray-400 italic">Seleccione un asesor...</option>
                         {asesor.map((item) => (
@@ -304,7 +370,7 @@ return (
                 </div>
 
                 <div className="mb-2">
-                    <div>Tipo de cita</div>
+                    <div>Tipo de cita<span className="ml-1 text-red-500">(*)</span></div>
                     <select className="select-cap" onChange={(e) => setSelectedTipoCita(e.target.value)}>
                     <option value="" key="" className="text-gray-400 italic">Seleccione un tipo de cita...</option>
                     {tipoCita.map((item) => (
@@ -314,7 +380,7 @@ return (
                 </div>
 
                 <div>
-                    <div>Cita</div>
+                    <div>Cita<span className="ml-1 text-red-500">(*)</span></div>
                     <input type="text" className="w-80 border-none text-cyan-500 bg-gray-100 font-bold uppercase" value={selectedDate && selectedHour ? `${formatDate(selectedDate)} a las ${formatHour(selectedHour)}` : "Seleccione fecha y hora en el calendario..." } disabled />
                 </div>
             </div>
@@ -333,19 +399,17 @@ return (
                     right: 'today',
                 }} 
                 dayCellClassNames={(date) => {
-                    if (!Array.isArray(rawData)) {
-                        console.error("rawData no es un array:", rawData);
-                            return "";
-                    }
-
                     const isOccupied = rawData.some(
                         (event) => event.fecha === date.date.toISOString().split("T")[0]
                     );
-
+                
                     const isSelected = selectedDate === date.date.toISOString().split("T")[0];
-
-                    //return isOccupied ? "day-with-event" : "";
-                    return `${isOccupied ? "day-with-event" : ""} ${isSelected ? "selected-day": ""}`.trim();
+                
+                    const isBlocked = fechasBloqueadas.some(
+                        (blockedDate) => new Date(blockedDate.fecha).toISOString().split("T")[0] === date.date.toISOString().split("T")[0]
+                    );
+                
+                    return `${isOccupied ? "day-with-event" : ""} ${isSelected ? "selected-day" : ""} ${isBlocked ? "blocked-day" : ""}`.trim();
                 }}
                 locale={esLocale} 
                 height={400} />
@@ -357,7 +421,7 @@ return (
                                 <div className="underline font-bold p-1 text-blue-400 text-center text-base">Horarios disponibles</div>
                                     <ul className="grid grid-cols-2 gap-2 mt-2">
                                     {freeHours.map((hour, index) => (
-                                        <li className={`cursor-pointer border font-bold rounded border-blue-400 p-1 text-blue-400 text-center hover:bg-blue-400 hover:text-white transition-all duration-200 ${selectedHour === hour ? "bg-blue-400 text-white" : "bg-none"}`} key={index} onClick={() => handleClickHour(hour)}>{hour.split(":").slice(0, 2).join(":")}</li>
+                                        <li className={`cursor-pointer border font-bold rounded border-blue-400 p-1 text-blue-400 text-center hover:bg-blue-400 hover:text-white transition-all duration-200 ${selectedHour === hour ? "bg-blue-400 text-white" : "bg-none"}`} key={index} onClick={() => handleClickHour(hour)}>{formatHour(hour)}</li>
                                     ))}
                                     </ul>
                             </div>
@@ -386,19 +450,17 @@ return (
                             right: 'today',
                         }} 
                         dayCellClassNames={(date) => {
-                            if (!Array.isArray(rawData)) {
-                                console.error("rawData no es un array:", rawData);
-                                    return "";
-                            }
-        
                             const isOccupied = rawData.some(
                                 (event) => event.fecha === date.date.toISOString().split("T")[0]
                             );
-        
+                        
                             const isSelected = selectedDate === date.date.toISOString().split("T")[0];
-        
-                            //return isOccupied ? "day-with-event" : "";
-                            return `${isOccupied ? "day-with-event" : ""} ${isSelected ? "selected-day": ""}`.trim();
+                        
+                            const isBlocked = fechasBloqueadas.some(
+                                (blockedDate) => new Date(blockedDate.fecha).toISOString().split("T")[0] === date.date.toISOString().split("T")[0]
+                            );
+                        
+                            return `${isOccupied ? "day-with-event" : ""} ${isSelected ? "selected-day" : ""} ${isBlocked ? "blocked-day" : ""}`.trim();
                         }}
                         locale={esLocale} 
                         height={400} />
@@ -410,7 +472,7 @@ return (
                                         <div className="underline font-bold p-1 text-blue-400 text-center text-base">Horarios disponibles</div>
                                             <ul className="grid grid-cols-2 gap-2 mt-2">
                                             {freeHours.map((hour, index) => (
-                                                <li className={`cursor-pointer border font-bold rounded border-blue-400 p-1 text-blue-400 text-center hover:bg-blue-400 hover:text-white transition-all duration-200 ${selectedHour === hour ? "bg-blue-400 text-white" : "bg-none"}`} key={index} onClick={() => handleClickHourCita(hour)}>{hour.split(":").slice(0, 2).join(":")}
+                                                <li className={`cursor-pointer border font-bold rounded border-blue-400 p-1 text-blue-400 text-center hover:bg-blue-400 hover:text-white transition-all duration-200 ${selectedHour === hour ? "bg-blue-400 text-white" : "bg-none"}`} key={index} onClick={() => handleClickHourCita(hour)}>{formatHour(hour)}
                                                 </li>
                                             ))}
                                             </ul>

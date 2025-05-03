@@ -34,4 +34,6 @@
   @apply font-bold flex items-center text-gray-500
 }
 
-
+.react-datepicker__day--highlighted-custom-1 {
+  @apply bg-red-200 rounded text-black cursor-not-allowed !important
+}

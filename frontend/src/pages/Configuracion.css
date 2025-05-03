@@ -1,0 +1,11 @@
+.menu-izquierdo li {
+    @apply text-gray-500 p-3 w-full hover:bg-gray-200 transition-all cursor-pointer flex items-center
+}
+
+.menu-izquierdo svg {
+    @apply size-5 mr-1
+}
+
+.lista-activada {
+    @apply font-bold bg-gray-200
+}

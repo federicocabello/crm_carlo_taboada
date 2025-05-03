@@ -4,6 +4,7 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './Agenda.css';
+import ReprogramarCita from '../components/ReprogramarCita';
 
 const Agenda = () => {
     const navigate = useNavigate();
@@ -30,6 +31,13 @@ const Agenda = () => {
     const citasFiltradas = asesorSeleccionado === 0 ? citas : citas.filter(cita => cita.idasignado === asesorSeleccionado);
     const [rol, setRol] = useState('');
     const [asesores, setAsesores] = useState([]);
+    const [statusCita, setStatusCita] = useState([]);
+
+
+    const [fechasBloqueadas, setFechasBloqueadas] = useState([]);
+    const [highlightedDates, setHighlightedDates] = useState([]);
+    const [showModal, setShowModal] = useState(false);
+    const [selectedCita, setSelectedCita] = useState(null);
     
 /*
     useEffect(() => {
@@ -46,6 +54,14 @@ const Agenda = () => {
         }, [backendUrl]);
 */
 
+useEffect(() => {
+    const interval = setInterval(() => {
+        fetchCitas(currentDate);
+    }, 5000); // 5000 ms = 5 segundos
+
+    return () => clearInterval(interval); // Limpiar el intervalo cuando el componente se desmonte
+}, [currentDate]);
+
 const fetchCitas = (date) => {
     const formattedDate = date.toISOString().split('T')[0];
     axios.get(`${backendUrl}/agenda?fecha=${formattedDate}`, { withCredentials: true })
@@ -53,6 +69,10 @@ const fetchCitas = (date) => {
             setCitas(response.data.citas);
             setRol(response.data.rol[0]);
             setAsesores(response.data.asesores);
+            setFechasBloqueadas(response.data.fechasBloqueadas)
+            const dates = response.data.fechasBloqueadas.map(fecha => new Date(fecha.fecha));
+            setHighlightedDates(dates);
+            setStatusCita(response.data.statuscita);
         })
         .catch((error) => {
             console.error("Error al obtener los datos de la agenda: ", error);
@@ -65,11 +85,23 @@ useEffect(() => {
 }, [currentDate]);
 
 const handlePrevDay = () => {
-    setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
+    setCurrentDate(prevDate => {
+        let newDate = new Date(prevDate);
+        do {
+            newDate.setDate(newDate.getDate() - 1);
+        } while (fechasBloqueadas.some(fecha => new Date(fecha.fecha).toDateString() === newDate.toDateString()));
+        return newDate;
+    });
 };
 
 const handleNextDay = () => {
-    setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)));
+    setCurrentDate(prevDate => {
+        let newDate = new Date(prevDate);
+        do {
+            newDate.setDate(newDate.getDate() + 1);
+        } while (fechasBloqueadas.some(fecha => new Date(fecha.fecha).toDateString() === newDate.toDateString()));
+        return newDate;
+    });
 };
 
         const handleAsesorChange = (e) => {
@@ -82,6 +114,47 @@ const handleNextDay = () => {
             setCurrentDate(date);
             setShowDatePicker(false);
         };
+        
+        const handleStatusChange = (id, oldStatus, newStatus, resultado, motivo) => {
+            if (newStatus == 0){
+                while (true) {
+                    motivo = prompt("Ingrese el motivo de cancelación de la cita:")
+
+                    if (motivo === null) {
+                        return;
+                    }
+            
+                    if (motivo.trim() === "") {
+                        alert("Debe ingresar un motivo de cancelación de la cita para continuar.");
+                    } else {
+                        break;
+                    }
+                }
+            } else if (newStatus > 1 && oldStatus < 2){
+                while (true) {
+                    resultado = prompt("Ingrese el resultado de la cita:")
+
+                    if (resultado === null) {
+                        return;
+                    }
+            
+                    if (resultado.trim() === "") {
+                        alert("Debe ingresar un resultado de cita para continuar.");
+                    } else {
+                        break;
+                    }
+                }
+            }
+            axios.post(`${backendUrl}/agenda/cambiar-status`, {"idcita": id, "newstatus": newStatus, "motivo": motivo, "resultado": resultado}, { withCredentials: true })
+                        .then((response) => {
+                            console.log("Datos guardados correctamente:", response.data);
+                            fetchCitas(currentDate);
+                        })
+                        .catch((error) => {
+                            console.error("Error al cambiar el status:", error);
+                            alert("Error al cambiar el status. Reintente.");
+                });
+        };
     return (
         
         <div className="flex justify-center">
@@ -93,7 +166,17 @@ const handleNextDay = () => {
                         </svg>
                     </div>
                     <div>
-                        <div className="capitalize font-bold">{weekday}</div>
+                        <div className="capitalize font-bold">
+                            {weekday}
+                            {fechasBloqueadas.some(fecha => new Date(fecha.fecha).toDateString() === currentDate.toDateString()) && (
+                                <div className="bg-red-500 rounded-xl text-xs text-white py-1 flex justify-center items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                    Bloqueada
+                                </div>
+                            )}
+                        </div>
                         <div className="text-8xl font-bold mb-2 cursor-pointer hover:text-cyan-500 hover:scale-105 transition-all" onClick={ () => setShowDatePicker(!showDatePicker)}>{day}</div>
                         <div>{monthNamesEs[month]} {year}</div>
                     </div>
@@ -110,6 +193,7 @@ const handleNextDay = () => {
                     selected={currentDate}
                     onChange={handleDateChange}
                     inline
+                    highlightDates={[{ "react-datepicker__day--highlighted-custom-1": highlightedDates }]}
                 />
                 </div>
             )}
@@ -136,7 +220,7 @@ const handleNextDay = () => {
                     <table className="tabla-agenda-citas">
                         <thead>
                             <tr className="bg-cyan-500 text-white">
-                                <th colSpan={2}>Hora</th>
+                                <th>Hora</th>
                                 <th>Cliente</th>
                                 <th>Tipo y razón de cita</th>
                                 <th>Caso</th>
@@ -146,7 +230,8 @@ const handleNextDay = () => {
                         <tbody>
                         {citasFiltradas.length > 0 ? (
                                 citasFiltradas.map((cita) => (
-                                    <tr>
+                                    <tr key={cita.idcita}>
+                                        {/*
                                         <td className="w-8 text-center">
                                             {cita.done ? (
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-7 text-green-700 cursor-pointer hover:text-gray-300 transition-all">
@@ -158,10 +243,28 @@ const handleNextDay = () => {
                                                 </svg>
                                             )}
                                         </td>
-                                        <td className="font-bold text-center w-40">{cita.hora}
-                                            <div className="text-sm text-white border rounded-xl" style={{ backgroundColor: '#'+cita.colorstatuscita }}>
-                                                {cita.statuscita}
+                                        */}
+                                        <td className="font-bold text-center w-40">
+                                            <div className="flex items-center justify-center hover:underline transition-all cursor-pointer" onClick={() => { setSelectedCita(cita); setShowModal(true); }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                            </svg>
+                                            {cita.hora}
                                             </div>
+                                            <div className="relative group">
+                                        <select className="text-sm text-white border rounded-xl text-center cursor-pointer w-full" style={{ backgroundColor: '#'+cita.colorstatuscita }} value={cita.idstatuscita} onChange={(e) => handleStatusChange(cita.idcita, cita.idstatuscita, e.target.value, cita.resultado, cita.motivo_cancelacion)}>
+                                            {statusCita.map((status) => (
+                                                <option key={status.id} value={status.id} className="bg-white text-black">
+                                                    {status.statuscita}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {cita.idstatuscita === 0 && (
+                                            <div className="absolute text-white text-xs font-bold p-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: '#'+cita.colorstatuscita }}>
+                                                {cita.motivo_cancelacion}
+                                            </div>
+                                        )}
+                                        </div>
                                         </td>
                                         <td>
                                             <div className="flex items-center">
@@ -189,14 +292,14 @@ const handleNextDay = () => {
                                                     {cita.telefono2}{cita.pertenecetel && (<span>- {cita.pertenecetel2}</span>)}</div>
                                             )}
                                         </td>
-                                        <td className="text-sm">
-                                            <div className="italic">{cita.tipocita}</div>
+                                        <td>
+                                            <div className="text-white border rounded-xl text-center font-bold w-32 text-sm" style={{ backgroundColor: '#'+cita.colortipocita }}>{cita.tipocita}</div>
                                             {cita.razon && (
-                                            <div className="flex items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                            </svg>
-                                            {cita.razon}
+                                            <div className="flex">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 shrink-0 self-top">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                </svg>
+                                                <span>{cita.razon}</span>
                                             </div>
                                             )}
                                         </td>
@@ -207,7 +310,7 @@ const handleNextDay = () => {
                                                 </svg>
                                                 {cita.idcaso} • {cita.nombrecaso}</div>
                                             <div className="text-red-500 text-xs font-bold">
-                                                {cita.tipocaso}
+                                                {cita.tipocaso} - {cita.subclase}
                                             </div>
                                             <div className="text-xs italic">
                                                 Asignado a <span className="font-bold">{cita.asignado}</span>
@@ -218,7 +321,7 @@ const handleNextDay = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4}>
+                                    <td colSpan={5}>
                                         <div className="p-rechazo text-green-600 justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
@@ -234,6 +337,7 @@ const handleNextDay = () => {
                 </div>
                 
             </div>
+            <ReprogramarCita showModal={showModal} setShowModal={setShowModal} selectedCita={selectedCita} />
         </div>
     );
 };

@@ -8,8 +8,7 @@ const GestionDeClientes = () => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const [leads, setLeads] = useState([]);
     const [casos, setCasos] = useState([]);
-    const [filteredLeads, setFilteredLeads] = useState(leads);
-    const [filteredCasos, setFilteredCasos] = useState(casos);
+    const [filteredLeads, setFilteredLeads] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageRange, setPageRange] = useState([1, 10]);
     const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'asc' });
@@ -31,7 +30,6 @@ const GestionDeClientes = () => {
         .then((response) => {
             setLeads(response.data.resultados.leads);
             setCasos(response.data.resultados.casos);
-            setFilteredLeads(response.data.resultados.leads);
             setOficina(response.data.selects.oficina);
             setReferencia(response.data.selects.referencia);
             setStatusCaso(response.data.selects.statuscaso);
@@ -61,30 +59,25 @@ const GestionDeClientes = () => {
 
         if (filterOficina) {
             filtered = filtered.filter(lead => 
-                lead.oficina === filterOficina
+                lead.oficina == filterOficina
             );
         }
 
         if (filterReferencia) {
             filtered = filtered.filter(lead => 
-                lead.referido === filterReferencia
+                lead.referido == filterReferencia
             );
         }
-
-        setFilteredLeads(filtered);
-    }, [filterDate, filterName, filterOficina, filterReferencia, leads]);
-
-    useEffect(() => {
-        let filtered = casos;
 
         if (filterStatusCaso) {
-            filtered = filtered.filter(caso => 
-                caso.status === filterStatusCaso
+            filtered = filtered.filter(lead =>
+                lead.status.toLowerCase().includes(filterStatusCaso.toLowerCase())
             );
-        }
+        }        
 
-        setFilteredCasos(filtered);
-    }, [filterStatusCaso, casos]);
+        setFilteredLeads(filtered);
+    }, [filterDate, filterName, filterOficina, filterReferencia, filterStatusCaso, leads]);
+
 
     const indexOfLastLead = currentPage * leadsPerPage;
     const indexOfFirstLead = indexOfLastLead - leadsPerPage;
@@ -129,10 +122,6 @@ const GestionDeClientes = () => {
             }
         });
         setFilteredLeads(sortedLeads);
-    };
-
-    const handleProfile = (id) => {
-        navigate(`/perfil/${id}`);
     };
     
     return (
@@ -209,7 +198,7 @@ const GestionDeClientes = () => {
                     <tr key={lead.id}>
                         <td className='text-xs text-center'>{lead.fecha}</td>
                         <td>
-                            <div className="text-green-800 font-bold cursor-pointer" onClick={() => handleProfile(lead.id)}>
+                            <div className="text-green-800 font-bold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${lead.id}`)}>
                                 {lead.nombre}
                             </div>
                             {lead.telefonoUno &&
@@ -244,7 +233,7 @@ const GestionDeClientes = () => {
                             <div>
                             {casos.filter(caso => caso.idcliente === lead.id).map((caso) => (
                             <div key={caso.idcaso} className="font-bold my-1">
-                                <span className="w-10 inline-block">{caso.idcaso}</span>
+                                <span className="w-10 inline-block hover:underline cursor-pointer mr-2" onClick={() => navigate(`/caso/${caso.idcaso}`)}>{caso.idcaso}</span>
                                 <span className="text-white border rounded px-2" style={{ backgroundColor: '#'+caso.colorstatuscaso }}>{caso.status}</span>
                             </div>
                             ))}

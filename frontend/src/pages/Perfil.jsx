@@ -178,93 +178,45 @@ const Perfil = () => {
                                     </th>
                                 </tr>
                                 <tr className="bg-gray-400 text-white py-1">
-                                    <th className="border">Caso</th>
-                                    <th className="border">Cita</th>
+                                    <th className="border">Consulta</th>
+                                    <th className="border">Última cita</th>
                                     <th className="border">Asignado a</th>
                                     <th className="border">¿Califica?</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {casosSinAbrir.map((caso) => (
-                                    <tr className="border cursor-pointer hover:bg-gray-300" onClick={() => navigate(`/caso/${caso.idcaso}`)}>
+                                    <tr className="border cursor-pointer hover:bg-gray-200" onClick={() => navigate(`/caso/${caso.idcaso}`)}>
                                         <td>
-                                            <div className="font-bold">{caso.idcaso} • {caso.tipocaso}</div>
+                                            <div className="font-bold">{caso.idcaso}{caso.nombrecaso && (<span> • {caso.nombrecaso}</span>)}<span className="text-red-500"> • {caso.tipocaso} - {caso.subclase}</span></div>
                                             <div className="text-xs italic text-gray-500">Creado el {caso.fechacaso}</div>
                                         </td>
                                         <td>
-                                            <div className="flex items-center">
+                                            <div className="flex items-center font-bold">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
                                                 </svg>
                                                 {caso.citasfecha}
                                             </div>
-                                            <div>{caso.tipocita}</div>
+                                            <div className="text-sm text-white border rounded-xl font-bold text-center w-48" style={{ backgroundColor: '#'+caso.colortipocita }}>{caso.tipocita}</div>
                                         </td>
                                         <td>{caso.asignado}</td>
-                                        {caso.califica == 1 &&
-                            <td className="text-green-600 font-bold">
-                                <div className='flex items-center'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                    </svg> Si
-                                </div>
-                            </td> 
-                        }
-                        {caso.califica == 0 &&
-                            <td className="text-red-600 font-bold">
-                                <div className="flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg> No
-                                </div>
-                            </td>
-                        }
-                        {caso.califica == 2 &&
-                        <td className="text-blue-600 font-bold">
-                            <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                            </svg> Info Back
-                            </div>
-                        </td>
-                        }
-                        {caso.califica == 3 &&
-                        <td className="text-gray-500 font-bold">
-                            <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-                            </svg>
-                            Sin Calificar
-                            </div>
-                        </td>
-                        }
+                                        <td>
+                                        <div className="text-sm text-white border rounded-xl font-bold text-center" style={{ backgroundColor: '#'+caso.colorcalifica }}>{caso.califica}</div>
+                                        </td> 
                                     </tr>
                                 ))}
-                                <tr>
-                                    <td>
-                                        <button className="btn-guardar flex items-center mt-5" onClick={() => setMostrarNuevaConsulta(!mostrarNuevaConsulta)}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                        </svg>
-                                        Agregar consulta</button>
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     )}
-                    {mostrarNuevaConsulta && (
-                        <div>
-                            <CapturaDeDatos nuevaConsulta={true} idCliente={id} nombreCliente={datos.nombre} />
-                        </div>
-                    )}
-                    {datos.clasificacion == "CLIENTE" && (
-                        casos.length > 0 ? (
+                    
+                    {casos.length > 0 ? (
                         <table className="table-perfil-casos">
                             <thead>
                                 <tr>
                                     <th>Caso</th>
                                     <th>Beneficiario</th>
-                                    <th>Cita</th>
+                                    <th>Última cita</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -275,21 +227,21 @@ const Perfil = () => {
                                             <div className="hover:underline mr-2">{caso.idcaso} - {caso.caso}</div>
                                             <span className="text-white border rounded px-2 font-bold text-sm" style={{ backgroundColor: '#'+caso.colorstatuscaso }}>{caso.statuscaso}</span>
                                         </div>
-                                        <div className="text-xs text-red-500">{caso.tipocaso}</div>
+                                        <div className="text-xs text-red-500">{caso.tipocaso} - {caso.subclase}</div>
                                         <div className="text-xs italic text-gray-500 font-normal">Creado el {caso.fechacaso}</div>
                                     </th>
                                     <th>
                                         {caso.nombreb}
                                     </th>
                                     <th>
-                                            <div className="flex items-center">
+                                            <div className="flex items-center font-bold">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
                                                 </svg>
                                                 {caso.citasfecha}
+                                                <div className="text-sm text-white border rounded-xl font-bold text-center ml-2 w-32" style={{ backgroundColor: '#'+caso.colortipocita }}>{caso.tipocita}</div>
                                             </div>
-                                            <div>{caso.tipocita}</div>
-                                            <div className="text-sm text-white border rounded-xl font-bold text-center w-32" style={{ backgroundColor: '#'+caso.colorstatuscaso }}>{caso.statuscita}</div>
+                                            <div className="text-sm text-white border rounded-xl font-bold text-center w-32" style={{ backgroundColor: '#'+caso.colorstatuscita }}>{caso.statuscita}</div>
                                     </th>
                                 </tr>
                                 ))}
@@ -300,8 +252,19 @@ const Perfil = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                     </svg>
                     Este cliente no tiene casos abiertos.</p>
-                    )
-                )}
+                    )}
+
+                <button className="btn-guardar flex items-center mt-5" onClick={() => setMostrarNuevaConsulta(!mostrarNuevaConsulta)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                        </svg>
+                                        Agregar consulta</button>
+                    {mostrarNuevaConsulta && (
+                        <div>
+                            <CapturaDeDatos nuevaConsulta={true} idCliente={id} nombreCliente={datos.nombre} />
+                        </div>
+                    )}
+
                 </TabPanel>
             </Tabs>
         </div>

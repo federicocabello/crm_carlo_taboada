@@ -21,6 +21,7 @@ const GestionDeLeads = () => {
     const [statuscita, setStatuscita] = useState([]);
     const [asesores, setAsesores] = useState([]);
     const [creador, setCreador] = useState([]);
+    const [califica, setCalifica] = useState([]);
 
     const [filterOficina, setFilterOficina] = useState('');
     const [filterReferencia, setFilterReferencia] = useState('');
@@ -35,13 +36,13 @@ const GestionDeLeads = () => {
         axios.get(`${backendUrl}/gestion-de-leads`, {withCredentials: true})
         .then((response) => {
             setLeads(response.data.resultados.leads);
-            setFilteredLeads(response.data.resultados.leads);
             setOficina(response.data.selects.oficina);
             setReferencia(response.data.selects.referencia);
             setTipocaso(response.data.selects.tipo_caso);
             setStatuscita(response.data.selects.status_cita);
             setAsesores(response.data.selects.asesores);
             setCreador(response.data.selects.creadores);
+            setCalifica(response.data.selects.califica)
         })
         .catch((error) => {
             console.error("Error al obtener los leads:", error);
@@ -56,49 +57,49 @@ const GestionDeLeads = () => {
                 const [month, day, year] = lead.fecha.split('/');
                 const leadDate = new Date(`${year}-${month}-${day}`);
                 const selectedDate = new Date(filterDate);
-                return leadDate.toDateString() === selectedDate.toDateString();
+                return leadDate.toDateString() == selectedDate.toDateString();
             });
         }
 
         if (filterName) {
             filtered = filtered.filter(lead => 
-                lead.nombre.toLowerCase().includes(filterName.toLowerCase())
+                lead.nombrec.toLowerCase().includes(filterName.toLowerCase())
             );
         }
 
         if (filterOficina) {
             filtered = filtered.filter(lead => 
-                lead.oficina === filterOficina
+                lead.oficina == filterOficina
             );
         }
 
         if (filterReferencia) {
             filtered = filtered.filter(lead => 
-                lead.referido === filterReferencia
+                lead.referido == filterReferencia
             );
         }
 
         if (filterTipocaso) {
             filtered = filtered.filter(lead => 
-                lead.tipocaso === filterTipocaso
+                lead.tipocaso == filterTipocaso
             );
         }
 
         if (filterStatuscita) {
             filtered = filtered.filter(lead =>
-                lead.statuscita === filterStatuscita
+                lead.statuscita == filterStatuscita
             );
         }
 
         if (filterAsesores) {
             filtered = filtered.filter(lead =>
-                lead.asignado === filterAsesores
+                lead.asignado == filterAsesores
             );
         }
 
         if (filterCreador) {
             filtered = filtered.filter(lead =>
-                lead.creador === filterCreador
+                lead.creador == filterCreador
             );
         }
 
@@ -109,7 +110,7 @@ const GestionDeLeads = () => {
         }
 
         setFilteredLeads(filtered);
-    }, [filterDate, filterName, filterOficina, filterReferencia, filterTipocaso, filterStatuscita, filterAsesores, filterCreador, filterCalifica, leads]);
+    }, [leads, filterDate, filterName, filterOficina, filterReferencia, filterTipocaso, filterStatuscita, filterAsesores, filterCreador, filterCalifica]);
 
     const indexOfLastLead = currentPage * leadsPerPage;
     const indexOfFirstLead = indexOfLastLead - leadsPerPage;
@@ -155,14 +156,6 @@ const GestionDeLeads = () => {
         });
         setFilteredLeads(sortedLeads);
     };
-
-    const handleProfile = (id) => {
-        navigate(`/perfil/${id}`);
-    };
-
-    const handleCaso = (id) => {
-        navigate(`/caso/${id}`);
-    };
     
     return (
         <div>
@@ -199,7 +192,7 @@ const GestionDeLeads = () => {
                         </th>
                         <th>
                             <select onChange={(e) => setFilterTipocaso(e.target.value)}>
-                                <option value="" key="" className='text-gray-400'>Filtrar tipos de caso...</option>
+                                <option value="" key="" className='text-gray-400'>Filtrar tipos de consulta...</option>
                                 {tipocaso.map((item) => (
                                     <option key={item.id} value={item.tipocaso}>{item.tipocaso}</option>
                                 ))}
@@ -224,10 +217,9 @@ const GestionDeLeads = () => {
                         <th>
                             <select onChange={(e) => setFilterCalifica(e.target.value)}>
                                 <option value="" key="" className="text-gray-400">Filtrar calificados...</option>
-                                <option value="1" className='text-green-500 font-bold'>Si</option>
-                                <option value="0" className='text-red-500 font-bold'>No</option>
-                                <option value="2" className='text-blue-500 font-bold'>Info Back</option>
-                                <option value="3" className='text-gray-500 font-bold'>Sin Calificar</option>
+                                {califica.map((item) => (
+                                    <option key={item.id} value={item.califica}>{item.califica}</option>
+                                ))}
                             </select>
                         </th>
                         <th>
@@ -242,7 +234,7 @@ const GestionDeLeads = () => {
                     <tr>
                         <th>
                             <div className="flex justify-center items-center">
-                                Fecha
+                                Registrado
                                 <i onClick={() => sortLeads('fecha')} className="cursor-pointer hover:text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
@@ -262,7 +254,7 @@ const GestionDeLeads = () => {
                         </th>
                         <th>Oficina</th>
                         <th>Fuente</th>
-                        <th>Tipo de caso</th>
+                        <th>Tipo de consulta</th>
                         <th>Status y razón de cita</th>
                         <th>Asignado a</th>
                         <th>¿Califica?</th>
@@ -271,10 +263,10 @@ const GestionDeLeads = () => {
                 </thead>
                 <tbody>
                 {currentLeads.map((lead) => (
-                    <tr key={lead.idcliente}>
+                    <tr key={lead.idcita}>
                         <td className='text-xs text-center'>{lead.fecha}</td>
                         <td>
-                            <div className="text-blue-800 font-bold cursor-pointer hover:underline" onClick={() => handleProfile(lead.idcliente)}>
+                            <div className="text-blue-800 font-bold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${lead.idcliente}`)}>
                                 {lead.nombrec}
                             </div>
                             {lead.telefonoUno &&
@@ -300,55 +292,34 @@ const GestionDeLeads = () => {
                         </td>
                         <td>{lead.oficina}</td>
                         <td>{lead.referido}</td>
-                        <td><div className="font-bold bg-gray-600 cursor-pointer hover:bg-gray-300 hover:text-gray-600 text-center w-full border rounded-xl text-white transition-all hover:border-gray-600" onClick={() => handleCaso(lead.idcaso)}>{lead.tipocaso}</div></td>
-                        <td>
-                            {lead.statuscita}
+                        <td className="w-64">
+                            <div className="font-bold bg-gray-600 cursor-pointer hover:bg-gray-300 hover:text-gray-600 text-center w-full border rounded-xl text-white transition-all hover:border-gray-600" onClick={() => navigate(`/caso/${lead.idcaso}`)}>{lead.tipocaso}</div>
+                            <div className="text-xs text-center font-bold text-gray-600 mt-1">{lead.subclase}</div>
+                        </td>
+                        <td className='w-96'>
+                            <div className="p-1 text-white text-xs font-bold text-center border rounded-full w-32" style={{ backgroundColor: '#'+lead.colorstatuscita }}>
+                                {lead.statuscita}
+                            </div>
                             {lead.razoncita &&
                             <div className='flex'>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 shrink-0 self-top">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                </svg> {lead.razoncita}
+                                </svg>
+                                <span>{lead.razoncita}</span>
                             </div>
                     }
                         </td>
                         <td>{lead.asignado}</td>
-                        {lead.califica == 1 &&
-                            <td className="text-green-600 font-bold">
-                                <div className='flex items-center'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                    </svg> Si
-                                </div>
-                            </td> 
-                        }
-                        {lead.califica == 0 &&
-                            <td className="text-red-600 font-bold">
-                                <div className="flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg> No
-                                </div>
-                            </td>
-                        }
-                        {lead.califica == 2 &&
-                        <td className="text-blue-600 font-bold">
-                            <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                            </svg> Info Back
+                        <td className="w-32">
+                            <div className="relative group">
+                                <div style={{ backgroundColor: '#'+lead.colorcalifica }} className="p-1 text-white text-xs font-bold text-center border rounded-full">{lead.califica}</div>
+                                {lead.motivo_califica && (
+                                    <div className="absolute left-0 top-full mt-1 w-48 p-2 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity font-bold z-10" style={{ backgroundColor: '#'+lead.colorcalifica }}>
+                                    {lead.motivo_califica}
+                                    </div>
+                                )}
                             </div>
                         </td>
-                        }
-                        {lead.califica == 3 &&
-                        <td className="text-gray-500 font-bold">
-                            <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-                            </svg>
-                            Sin Calificar
-                            </div>
-                        </td>
-                        }
                         <td>{lead.creador}</td>
                     </tr>
                 ))}
