@@ -697,17 +697,35 @@ def caso_pago_control_actualizar():
     cursor.close()
     return jsonify({"mensaje": "Datos de control de pagos actualizados correctamente."})
 
+def formatear(num):
+    return "{:,.2f}".format(num).replace(",", "X").replace(".", ",").replace("X", ".")
+
 @app.route("/caso/pago/registrar", methods=["POST"])
 @login_required
 def caso_pago_registrar():
     datos = request.json
+    monto_formateado = formatear(datos.get("monto"))
     cursor = mysql.connection.cursor()
     esSaldo = datos.get("esSaldo")
     if esSaldo:
         cursor.execute("INSERT INTO pagos (control, fecha, monto, tipo, pagado) VALUES (%s, current_date(), %s, 1, 3)", (datos.get("idcontrol"), datos.get("monto")))
+        cursor.execute("INSERT INTO log (cliente, caso, movimiento, agente, fecha, otro) VALUES (%s, %s, %s, %s, now(), 'PAGOS')", (datos.get("idcliente"), datos.get("idcaso"), "Registró un pago de SALDO PENDIENTE de "+monto_formateado, current_user.id))
+        cursor.execute("INSERT INTO casos_actualizaciones (idcaso, creado, actualizacion, agente, esresultado) VALUES (%s, now(), %s, %s, 2)", (datos.get("idcaso"), "PAGÓ UN SALDO PENDIENTE DE $ "+monto_formateado+".", current_user.id))
     else:
         cursor.execute("UPDATE pagos SET monto = %s, fecha = current_date(), pagado = 1, tipo = %s, nombretipopago = %s, numerotarjeta = %s WHERE id = %s", (datos.get("monto"), datos.get("tipo"), datos.get("nombre_tarjeta"), datos.get("numero_tarjeta"), datos.get("idpago")))
-    #cursor.execute("INSERT INTO log (caso, movimiento, agente, fecha, otro) VALUES (%s, %s, %s, now(), 'PAGOS')", (datos.get("idcaso"), "Actualizó los datos de control de pagos.", current_user.id))
+        cursor.execute("SELECT DATE_FORMAT(fecha, '%%m/%%d/%%Y'), monto FROM pagos WHERE pagado = 0 AND control = %s LIMIT 1;", (datos.get("idcontrol"),))
+        proxima_cuota = cursor.fetchone()
+        if datos.get("monto") == datos.get("monto_original"):
+            cuota_o_abono = "CUOTA"
+            cursor.execute("INSERT INTO log (cliente, caso, movimiento, agente, fecha, otro) VALUES (%s, %s, %s, %s, now(), 'PAGOS')", (datos.get("idcliente"), datos.get("idcaso"), "Registró un pago de CUOTA de "+monto_formateado, current_user.id))
+        else:
+            cuota_o_abono = "ABONO"
+            cursor.execute("INSERT INTO log (cliente, caso, movimiento, agente, fecha, otro) VALUES (%s, %s, %s, %s, now(), 'PAGOS')", (datos.get("idcliente"), datos.get("idcaso"), "Registró un pago de ABONO diferente al valor de la cuota de "+monto_formateado, current_user.id))
+        if proxima_cuota:
+                #Se valida Plan de Pagos Cl cumple con cuota de $375 para el dia 05/01/2025- Próximo Pago por valor de $375 para el dia 06/01/2025
+                cursor.execute("INSERT INTO casos_actualizaciones (idcaso, creado, actualizacion, agente, esresultado) VALUES (%s, now(), %s, %s, 2)", (datos.get("idcaso"), "SE VALIDA PLAN DE PAGOS CL CUMPLE CON "+cuota_o_abono+" DE $ "+monto_formateado+" PARA EL DÍA "+datos.get("fecha_vencimiento")+". PRÓXIMO PAGO POR VALOR DE $ "+str(formatear(proxima_cuota[1]))+" PARA EL DÍA "+proxima_cuota[0]+".", current_user.id))
+        else:
+                cursor.execute("INSERT INTO casos_actualizaciones (idcaso, creado, actualizacion, agente, esresultado) VALUES (%s, now(), %s, %s, 2)", (datos.get("idcaso"), "SE VALIDA PLAN DE PAGOS CL CUMPLE CON "+cuota_o_abono+" DE $ "+monto_formateado+" PARA EL DÍA "+datos.get("fecha_vencimiento")+".", current_user.id))
     mysql.connection.commit()
     cursor.close()
     return jsonify({"mensaje": "Pago registrado correctamente."})
