@@ -710,11 +710,11 @@ const Caso = () => {
                                             {actualizaciones.map((item) => (
                                             <div key={item.id} className="my-3 rounded-xl border-2 bg-white">
                                                     <div className={`text-gray-700 p-2 text-sm flex items-center cursor-pointer ${
-                                                            item.esresultado === 0
+                                                            item.esresultado == 1
                                                             ? 'bg-cyan-200'
-                                                            : item.esresultado === 1
+                                                            : item.esresultado == 0
                                                             ? 'bg-lime-200'
-                                                            : item.esresultado === 2
+                                                            : item.esresultado == 2
                                                             ? 'bg-amber-200'
                                                             : ''
                                                         }`} onClick={() => toggleExpand(item.id)}>
