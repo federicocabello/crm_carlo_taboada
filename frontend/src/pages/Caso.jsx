@@ -8,18 +8,21 @@ import CapturaDeDatos from './CapturaDeDatos'
 import FormatearNumero from '../components/FormatearNumero'
 import PlanDePagos from '../components/PlanDePagos';
 import RegistrarPago from '../components/RegistrarPago';
+import RegistrarPagoIndependiente from '../components/RegistrarPagoIndependiente';
 //import { options } from '@fullcalendar/core/preact.js';
 
 const Caso = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const [loading, setLoading] = useState(false);
     const [caso, setCaso] = useState([]);
     const [rol, setRol] = useState(null);
     const [citas, setCitas] = useState([]);
     const [actualizaciones, setActualizaciones] = useState([]);
     const [nuevaActualizacion, setNuevaActualizacion] = useState("");
-    const [nuevaCita, setNuevaCita] = useState({idcaso: id, razon: '', status: 1, tipo: 0, asignado: 0, idcliente: null})
+    const [nuevaCita, setNuevaCita] = useState({idcaso: id, razon: '', status: 1, tipo: '0', asignado: '0', idcliente: null})
+    {/*
     useEffect(() => {
         if (caso.idcliente) {
             setNuevaCita((prevNuevaCita) => ({
@@ -28,6 +31,16 @@ const Caso = () => {
             }));
         }
     }, [caso]);
+    */}
+    useEffect(() => {
+    if (caso && caso.idcliente) {
+        setNuevaCita(prev => ({ ...prev, idcliente: caso.idcliente }));
+    }
+    }, [caso?.idcliente]);
+
+    useEffect(() => {
+        setNuevaCita(prev => ({ ...prev, idcaso: id }));
+    }, [id]);
 
     const [asesores, setAsesores] = useState([]);
     const [tipos, setTipos] = useState([]);
@@ -38,9 +51,11 @@ const Caso = () => {
     const [subclase, setSubclase] = useState([]);
 
     const [pagos, setPagos] = useState([]);
-    const [pagosNotas, setPagosNotas] = useState([]);
     const [pagosControl, setPagosControl] = useState([]);
     const [pagosNo, setPagosNo] = useState([]);
+    const [pagosUnicos, setPagosUnicos] = useState([]);
+    const [pagosIndependientes, setPagosIndependientes] = useState([]);
+    const [reciboEntrega, setReciboEntrega] = useState(null);
 
     const [pagosEstados, setPagosEstados] = useState([]);
     const [deudaTotal, setDeudaTotal] = useState(0);
@@ -60,6 +75,7 @@ const Caso = () => {
     const [selectedSubclase, setSelectedSubclase] = useState(null);
 
     const [tiposdePago, setTiposDePago] = useState([]);
+    const [metodosPago, setMetodosPago] = useState([]);
 
     const toggleExpand = (id) => {
         setExpandedItems({
@@ -84,12 +100,21 @@ const Caso = () => {
         }));
     };
 
+    {/*
     const handleNuevaCitaChange = (e) => {
         const { name, value } = e.target;
         setNuevaCita({
             ...nuevaCita,
             [name]: value
         });
+    };
+*/}
+    const handleNuevaCitaChange = (e) => {
+        const { name, value } = e.target;
+        setNuevaCita(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
     const expandAll = () => {
@@ -135,37 +160,23 @@ const Caso = () => {
         );
     };
 
-    const handleInputChangeStatusCita = (idcita, oldStatus, newStatus, resultado, motivo) => {
+    const handleInputChangeStatusCita = (idcita, newStatus, resultado, motivo) => {
     
-        if (newStatus == 0){
-            while (true) {
-                motivo = prompt("Ingrese el motivo de cancelación de la cita:")
+        if (newStatus == 0 || newStatus == 3 || newStatus == 5 || newStatus == 6 || newStatus == 9 || newStatus == 10 || newStatus == 11) {
+                while (true) {
+                    motivo = prompt("Ingrese el motivo de cancelación de la cita:")
 
-                if (motivo === null) {
-                    return;
-                }
-        
-                if (motivo.trim() === "") {
-                    alert("Debe ingresar un motivo de cancelación de la cita para continuar.");
-                } else {
-                    break;
+                    if (motivo === null) {
+                        return;
+                    }
+            
+                    if (motivo.trim() === "") {
+                        alert("Debe ingresar un motivo de cancelación de la cita para continuar.");
+                    } else {
+                        break;
+                    }
                 }
             }
-        } else if (newStatus > 1 && oldStatus < 2){
-            while (true) {
-                resultado = prompt("Ingrese el resultado de la cita:")
-
-                if (resultado === null) {
-                    return;
-                }
-        
-                if (resultado.trim() === "") {
-                    alert("Debe ingresar un resultado de cita para continuar.");
-                } else {
-                    break;
-                }
-            }
-        }
     
         setCitas((prevCitas) =>
             prevCitas.map((cita) =>
@@ -178,6 +189,8 @@ const Caso = () => {
 
     const [documentos, setDocumentos] = useState([]);
     const [documentosClasificaciones, setDocumentosClasificaciones] = useState([]);
+
+    const [logs, setLogs] = useState([]);
 
     const cargarSitioCaso = () => {
         axios.get(`${backendUrl}/caso/${id}`, {withCredentials: true})
@@ -202,18 +215,24 @@ const Caso = () => {
                     setSelectedSubclase(response.data.caso.idsubclase);
 
                     setPagos(response.data.pagos);
-                    setPagosNotas(response.data.pagos_notas);
                     setPagosControl(response.data.pagos_control);
                     setPagosEstados(response.data.pagos_estados);
                     setPagosNo(response.data.no_pagos);
                     setSaldoRestante(response.data.saldo_restante);
                     setTiposDePago(response.data.pagos_tipos);
+                    setMetodosPago(response.data.pagos_metodos);
+
+                    setPagosUnicos(response.data.pagos_unicos);
+                    setPagosIndependientes(response.data.pagos_independientes);
 
                     setDeudaTotal(response.data.deudatotal)
+                    setReciboEntrega(response.data.recibo_entrega);
+
+                    setLogs(response.data.log);
                 })
                 .catch((error) => {
                     console.error("Error al obtener los datos del caso: ", error);
-                    alert("Error al obtener los datos del caso.");
+                    alert("Error! El caso no existe. Reintente.");
                 });
             };
 
@@ -235,6 +254,7 @@ const Caso = () => {
         };
 
         const handleAddActualizacion = () => {
+            setLoading(true);
             axios.post(`${backendUrl}/caso/actualizacion/nueva`, {"actualizacion": nuevaActualizacion, "id": id}, { withCredentials: true })
                     .then((response) => {
                         alert(response.data.mensaje);
@@ -261,8 +281,13 @@ const Caso = () => {
                 link.click();
                 link.remove();
                 */
-                const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-                window.open(url, '_blank');
+
+                const tipo = response.headers['content-type']; // MIME type correcto
+                const blob = new Blob([response.data], { type: tipo });
+                const url = window.URL.createObjectURL(blob);
+                window.open(url);
+                //const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                //window.open(url, '_blank');
             })
             .catch((error) => {
                 console.error("Error al obtener el documento:", error);
@@ -361,6 +386,7 @@ const Caso = () => {
     };
 
     const handleSaveCita = (idcita) => {
+        setLoading(true);
         const cita = citas.find(c => c.idcita === idcita);
         const data = { ...cita, selectedDate, selectedHour };
         axios.post(`${backendUrl}/caso/guardar-cita`, data, { withCredentials: true })
@@ -384,7 +410,7 @@ const Caso = () => {
         const data = { idpago: idpago, cartas: cartas, estado: estado, idcaso: caso.idcaso };
         axios.post(`${backendUrl}/caso/pago/control/actualizar`, data, { withCredentials: true })
             .then((response) => {
-                console.log(response.data.mensaje)
+                console.log(response.data.mensaje);
                 cargarSitioCaso();
             })
             .catch((error) => {
@@ -409,6 +435,7 @@ const Caso = () => {
     };
 
     const handleSaveNuevaCita = () => {
+        setLoading(true);
         const data = {nuevaCita, selectedDateNuevaCita, selectedHourNuevaCita}
         axios.post(`${backendUrl}/caso/nueva-cita`, data, { withCredentials: true })
             .then((response) => {
@@ -509,9 +536,29 @@ const Caso = () => {
                 setPlanDePagosVisible(false);
             }
 
+            const onStart = (idpago, monto, esSaldoRestante) => {
+                const deudaActualizada = parseFloat(deudaTotal) - parseFloat(monto);
+                cargarSitioCaso();
+                setRegistrarPagoVisible(false);
+                if (!esSaldoRestante) {
+                    window.open(`${backendUrl}/recibos/${idpago}/${parseFloat(deudaActualizada)}`, '_blank');
+                }
+            }
+
+            const onStartReciboIndependiente = (idreciboindependiente) => {
+                cargarSitioCaso();
+                setRegistrarPagoIndependienteVisible(false);
+                window.open(`${backendUrl}/reciboindependiente/${idreciboindependiente}`, '_blank');
+            }
+
             const onCloseRegistrarPago = () => {
                 cargarSitioCaso();
                 setRegistrarPagoVisible(false);
+            }
+
+            const onCloseRegistrarPagoIndependiente = () => {
+                cargarSitioCaso();
+                setRegistrarPagoIndependienteVisible(false);
             }
             
             const [pagoIdControl, setPagoIdControl] = useState(null);
@@ -525,6 +572,98 @@ const Caso = () => {
                 setFechaVencimiento(vencimiento);
                 setRegistrarPagoVisible(true);
             }
+
+            const [registrarPagoIndependienteVisible, setRegistrarPagoIndependienteVisible] = useState(false);
+
+            const deleteActualizacion = (idActualizacion) => {
+                if (window.confirm("¿Está seguro de que desea eliminar esta actualización?")) {
+                    axios.post(`${backendUrl}/caso/actualizacion/eliminar`, { idActualizacion: idActualizacion, idcaso: id }, { withCredentials: true })
+                        .then((response) => {
+                            alert(response.data.mensaje);
+                            window.location.reload();
+                        })
+                        .catch((error) => {
+                            console.error("Error al eliminar la actualización:", error);
+                            alert("Error al eliminar la actualización. Reintente.");
+                        });
+                }
+            }
+
+            const formatDateForInput = (fecha) => {
+                if (!fecha) return '';
+                const [mes, dia, anio] = fecha.split('/');
+                return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+            };
+
+            const handleFechaChange = (id, nuevaFecha) => {
+                axios.post(`${backendUrl}/pagos/actualizar-fecha`, { id, fecha: nuevaFecha }, { withCredentials: true })
+                    .then((response) => {
+                        console.log(response.data.mensaje);
+                        cargarSitioCaso();
+                    })
+                    .catch((error) => {
+                    console.error("Error actualizando fecha:", error);
+                    alert("Hubo un error al actualizar la fecha.");
+                    });
+            };
+
+            const handleMontoChange = (id, nuevoMonto) => {
+                axios.post(`${backendUrl}/pagos/actualizar-monto`, { id, monto: nuevoMonto }, { withCredentials: true })
+                    .then((response) => {
+                        console.log(response.data.mensaje);
+                        cargarSitioCaso();
+                    })
+                    .catch((error) => {
+                    console.error("Error actualizando monto:", error);
+                    alert("Hubo un error al actualizar el monto.");
+                    });
+            };
+
+            const handleEliminarPagoIndependiente = (idpagoindependiente) => {
+                if (!window.confirm("¿Está seguro de que desea eliminar este pago? Esta acción no se puede deshacer.")) {
+                    return;
+                }
+                axios.post(`${backendUrl}/pagosindependientes/eliminar`, { idpago: idpagoindependiente, idcaso: id }, { withCredentials: true })
+                    .then((response) => {
+                        console.log(response.data.mensaje);
+                        cargarSitioCaso();
+                    })
+                    .catch((error) => {
+                    console.error("Error al eliminar pago independiente:", error);
+                    alert("Hubo un error al eliminar el pago independiente.");
+                    });
+            };
+
+            const handleEliminarPago = (idpago) => {
+                if (!window.confirm("¿Está seguro de que desea eliminar este pago? Esta acción no se puede deshacer.")) {
+                    return;
+                }
+                axios.post(`${backendUrl}/pagos/eliminar`, { idpago: idpago, idcaso: id }, { withCredentials: true })
+                    .then((response) => {
+                        console.log(response.data.mensaje);
+                        cargarSitioCaso();
+                    })
+                    .catch((error) => {
+                    console.error("Error al eliminar pago:", error);
+                    alert("Hubo un error al eliminar el pago.");
+                    });
+            };
+
+             const handleEditarNotaPago = (idnota, nota) => {
+                const notaNueva = prompt("Ingrese la nueva nota:", nota);
+                if (!notaNueva) {
+                    return;
+                }
+                axios.post(`${backendUrl}/perfil/nota/editar-nota-pago`, { idnota: idnota, nota: notaNueva, idcaso: id }, { withCredentials: true })
+                    .then((response) => {
+                        console.log(response.data.mensaje);
+                        cargarSitioCaso();
+                    })
+                    .catch((error) => {
+                    console.error("Error al editar nota de pago:", error);
+                    alert("Hubo un error al editar nota de pago.");
+                    });
+            };
 
     return (
         <div>
@@ -558,14 +697,14 @@ const Caso = () => {
                         <span>Documentos</span>
                     </div>
                     </Tab>
-                    <Tab>
-                    <div className="tab-div">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="tab-div-img">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                        <span>Pagos</span>
-                    </div>
-                    </Tab>
+                        <Tab>
+                        <div className="tab-div">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="tab-div-img">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                            <span>Pagos</span>
+                        </div>
+                        </Tab>
                     <Tab>
                     <div className="tab-div">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="tab-div-img">
@@ -611,10 +750,10 @@ const Caso = () => {
                                 )}
                             </div>
                                 {caso.idcalifica == 0 && caso.capturadedatos == 1 && (
-                                    <div className="font-bold" style={{ color: '#'+caso.colorcalifica }}>NO CALIFICA: {caso.motivo_califica}</div>
+                                    <div className="font-bold border p-3 shadow-md mt-5 mb-4 rounded" style={{ color: '#'+caso.colorcalifica }}><span className="italic underline text-black font-normal">NO CALIFICA:</span> {caso.motivo_califica}</div>
                                 )}
                                 {caso.idcalifica == 2 && caso.capturadedatos == 1 && (
-                                    <div className=" font-bold" style={{ color: '#'+caso.colorcalifica }}>INFO BACK: {caso.motivo_califica}</div>
+                                    <div className=" font-bold border p-3 shadow-md mt-5 mb-4 rounded" style={{ color: '#'+caso.colorcalifica }}><span className="italic underline text-black font-normal">INFO BACK:</span> {caso.motivo_califica}</div>
                                 )}
                         <div className="flex justify-between mt-1">
                             <span>
@@ -625,7 +764,7 @@ const Caso = () => {
                                 ))}
                                 </select>
                             </span>
-                            {caso.capturadedatos == 1 && (
+
                             <span>
                                 <div>Tipo de caso</div>
                                 <select value={caso.idtipocaso} disabled={!isEditing} onChange={(e) => {handleInputChange(e); setSelectedTipoCaso(e.target.value)}} name="idtipocaso" className="mr-1">
@@ -634,6 +773,7 @@ const Caso = () => {
                                 ))}
                                 </select>
                                 <select name="idsubclase" onChange={(e) => {handleInputChange(e); setSelectedSubclase(e.target.value)}} disabled={!isEditing} value={selectedSubclase} className="w-96">
+                                    <option key="0" value="0">SIN CLASIFICACIÓN</option>
                                     {subclase
                                         .filter((sub) => sub.idtipocaso == selectedTipoCaso)
                                         .map((sub) => (
@@ -641,7 +781,7 @@ const Caso = () => {
                                         ))}
                                 </select>
                             </span>
-                            )}
+                            
                             {caso.capturadedatos == 0 && (
                             <span>
                                 <div>Status</div>
@@ -659,7 +799,7 @@ const Caso = () => {
                         </div>
                         )}
 
-                        {rol == "admin" && (
+                        {rol != "user" && (
                         <div className="justify-center flex my-5">
                             <button className="flex items-center btn-guardar bg-yellow-400 rounded border p-1 text-gray-700 cursor-pointer hover:text-black hover:bg-yellow-500 transition-all" onClick={toogleEditMode}>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
@@ -668,8 +808,6 @@ const Caso = () => {
                             </button>
                         </div>
                         )}
-
-                        {!caso.capturadedatos && (
                                         <div>
                                             <div className="flex items-center font-bold">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
@@ -698,19 +836,21 @@ const Caso = () => {
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                                 </svg>
-                                                    Nueva actualización
+                                                Nueva actualización
                                                 </button>
                                                 </div>
                                                 {mostrarNuevaActualizacion && (
                                                 <div className="flex items-center mt-5">
-                                                    <button className="btn-guardar mr-2 bg-emerald-500 hover:bg-emerald-700" onClick={handleAddActualizacion}>Enviar</button>
+                                                    <button className={`${loading || !nuevaActualizacion.trim() ? 'btn-guardar bg-transparent border-gray-300 text-gray-300 hover:bg-transparent mr-2': 'btn-guardar mr-2 bg-emerald-500 hover:bg-emerald-700 transition-all'}`} onClick={handleAddActualizacion} disabled={loading || !nuevaActualizacion.trim()}>{loading ? 'Cargando...' : 'Enviar'}</button>
                                                     <textarea className="text-sm border rounded w-full p-2 h-24" ref={textareaRef} onChange={(e) => setNuevaActualizacion(e.target.value)}></textarea>
                                                 </div>
                                             )}
                                             {actualizaciones.map((item) => (
-                                            <div key={item.id} className="my-3 rounded-xl border-2 bg-white">
-                                                    <div className={`text-gray-700 p-2 text-sm flex items-center cursor-pointer ${
-                                                            item.esresultado == 1
+                                            <div key={item.id} className="my-3 rounded-xl border-2 bg-white" hidden={item.deleted == 1 && rol != "superadmin"}>
+                                                    <div className={`text-gray-700 p-2 text-sm flex items-center rounded-xl cursor-pointer ${
+                                                            item.deleted == 1
+                                                            ? 'bg-gray-300'
+                                                            : item.esresultado == 1
                                                             ? 'bg-cyan-200'
                                                             : item.esresultado == 0
                                                             ? 'bg-lime-200'
@@ -734,16 +874,32 @@ const Caso = () => {
                                                         {item.esresultado == 2 && (
                                                             <span className="ml-1 font-bold text-white bg-green-500 px-2 rounded-full border">PAGO</span>
                                                         )}
+                                                        {item.deleted == 0 && rol == "superadmin" && (
+                                                            <span className="ml-auto" title="Eliminar actualización" onClick={(e) => {e.stopPropagation(); deleteActualizacion(item.id);}}>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 hover:text-black transition-all">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                </svg>
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {expandedItems[item.id] && (
-                                                        <div className="p-2 text-sm">
+                                                        <div className="p-2">
+                                                        {rol == "superadmin" && (
+                                                            <div className="flex items-center text-xs mb-2 text-gray-500 cursor-pointer hover:text-black" onClick={() => handleEditarNotaPago(item.id, item.actualizacion)}>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                            </svg>
+                                                            Editar
+                                                            </div>
+                                                            )}
+                                                        <div className="text-sm whitespace-pre-line">
                                                             {item.actualizacion}
+                                                        </div>
                                                         </div>
                                                     )}
                                             </div>
                                         ))}
                                     </div>
-                            )}
                         </div>
 
                     <div className="w-1/2">
@@ -776,14 +932,14 @@ const Caso = () => {
                             </div>
                             <div className="mb-2">
                                 <div>Status de cita</div>
-                                <select name="status" onChange={handleNuevaCitaChange} disabled>
+                                <select name="status" onChange={handleNuevaCitaChange} className="w-full" disabled>
                                     <option value="1" key="1">Programada</option>
                                 </select>
                             </div>
                             <div className="mb-2">
                                 <div>Tipo de cita</div>
-                                <select name="tipo" onChange={handleNuevaCitaChange}>
-                                    <option value="0" key="0" className="text-gray-500 italic" selected>Seleccione un tipo de cita...</option>
+                                <select name="tipo" onChange={handleNuevaCitaChange} className="w-full">
+                                    <option value="0" key="0" className="italic text-gray-300">Seleccione un tipo de cita...</option>
                                     {tipoCita.map((item) => (
                                     <option value={item.idtipocita} key={item.idtipocita}>{item.tipocita}</option>
                                     ))}
@@ -791,15 +947,15 @@ const Caso = () => {
                             </div>
                             <div className="mb-2">
                                 <div>Asignado a</div>
-                                <select onChange={handleNuevaCitaChange} name="asignado">
-                                <option value="0" key="0" className="text-gray-500 italic" selected>Seleccione un asesor...</option>
+                                <select onChange={handleNuevaCitaChange} name="asignado" className="w-full">
+                                <option value="0" key="0" className="italic text-gray-300">Seleccione un asesor...</option>
                                 {asesores.map((item) => (
                                 <option key={item.idasesor} value={item.idasesor}>{item.asesor}</option>
                                 ))}
                                 </select>
                             </div>
-                            <div className="justify-center mt-5">
-                                <button type="button" className="btn-guardar text-blue-500 border-blue-500 bg-transparent hover:bg-blue-500 hover:text-white hover:border-white" onClick={() => handleSaveNuevaCita()}>Guardar cita</button>
+                            <div className="justify-center mt-5 text-center">
+                                <button type="button" className={`${loading || !selectedDateNuevaCita || !selectedHourNuevaCita || !parseInt(nuevaCita.tipo) || !parseInt(nuevaCita.asignado) || !nuevaCita.razon.trim() ? 'btn-guardar bg-transparent border-gray-300 text-gray-300 hover:bg-transparent': 'btn-guardar bg-transparent text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white hover:border-white transition-all'}`} onClick={() => handleSaveNuevaCita()} disabled={loading || !selectedDateNuevaCita || !selectedHourNuevaCita || !parseInt(nuevaCita.tipo) || !parseInt(nuevaCita.asignado) || !nuevaCita.razon.trim()}>{loading ? 'Cargando...' : 'Guardar cita'}</button>
                             </div>
                         </div>
                         </div>
@@ -820,10 +976,10 @@ const Caso = () => {
                             )}
                             {cita.fechacita}
                             <span className="relative group">
-                            <span className="py-1 px-2 text-sm font-bold mx-2 text-white" style={{ backgroundColor: '#'+cita.colorstatuscita }}>{cita.statuscita}</span>
+                            <span className="py-1 px-2 text-sm font-bold mx-2 text-white rounded" style={{ backgroundColor: '#'+cita.colorstatuscita }}>{cita.statuscita}</span>
 
                             {cita.idstatuscita === 0 && (
-                                            <div className="absolute left-24 top-0 text-white text-xs font-bold p-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: '#'+cita.colorstatuscita }}>
+                                            <div className="absolute left-24 top-0 text-white text-xs italic font-bold p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity w-48 shadow-lg" style={{ backgroundColor: '#'+cita.colorstatuscita }}>
                                                 {cita.motivo_cancelacion}
                                             </div>
                                         )}
@@ -847,12 +1003,12 @@ const Caso = () => {
                             </div>
                             <div>
                                 <div>Resultado de la cita</div>
-                                <textarea className="h-40 w-80 text-sm" value={cita.resultado} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeCita(cita.idcita, e)} name="resultado"></textarea>
+                                <textarea className="h-40 w-80 text-sm" value={cita.resultado} disabled={!editingCitas[cita.idcita] || !cita.razon.trim() } onChange={(e) => handleInputChangeCita(cita.idcita, e)} name="resultado"></textarea>
                             </div>
                             <div>
                                 <div className="mb-2">
                                     <div>Status de cita</div>
-                                    <select value={cita.idstatuscita} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeStatusCita(cita.idcita, cita.idstatuscita, e.target.value, cita.resultado, cita.motivo_cancelacion)} name="idstatuscita">
+                                    <select value={cita.idstatuscita} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeStatusCita(cita.idcita, e.target.value, cita.resultado, cita.motivo_cancelacion)} name="idstatuscita" className="w-full">
                                         {statusCita.map((item) => (
                                         <option value={item.idstatuscita} key={item.idstatuscita}>{item.statuscita}</option>
                                         ))}
@@ -860,7 +1016,7 @@ const Caso = () => {
                                 </div>
                                 <div className="mb-2">
                                     <div>Tipo de cita</div>
-                                    <select value={cita.idtipocita} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeCita(cita.idcita, e)} name="idtipocita">
+                                    <select value={cita.idtipocita} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeCita(cita.idcita, e)} name="idtipocita" className="w-full">
                                         {tipoCita.map((item) => (
                                         <option value={item.idtipocita} key={item.idtipocita}>{item.tipocita}</option>
                                         ))}
@@ -868,7 +1024,7 @@ const Caso = () => {
                                 </div>
                                 <div className="mb-2">
                                     <div>Asignado a</div>
-                                    <select value={cita.idasignado} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeCita(cita.idcita, e)} name="idasignado">
+                                    <select value={cita.idasignado} disabled={!editingCitas[cita.idcita]} onChange={(e) => handleInputChangeCita(cita.idcita, e)} name="idasignado" className="w-full">
                                     {asesores.map((item) => (
                                     <option key={item.idasesor} value={item.idasesor}>{item.asesor}</option>
                                     ))}
@@ -888,11 +1044,11 @@ const Caso = () => {
 
                         {editingCitas[cita.idcita] && (
                         <div className="justify-center text-center mt-5">
-                            <button type="button" className="btn-guardar text-blue-500 border-blue-500 bg-transparent hover:bg-blue-500 hover:text-white hover:border-white" onClick={() => handleSaveCita(cita.idcita)}>Guardar</button>
+                            <button type="button" className={`${loading ? 'btn-guardar bg-transparent border-gray-300 text-gray-300 hover:bg-transparent': 'btn-guardar bg-transparent text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white hover:border-white transition-all'}`} onClick={() => handleSaveCita(cita.idcita)} disabled={loading}>{loading ? 'Cargando...' : 'Guardar'}</button>
                         </div>
                         )}
 
-                        {rol == "admin" && (
+                        {rol != "user" && (
                         <div className="flex justify-center mt-5">
                             <button className="flex items-center btn-guardar bg-cyan-300 rounded border p-1 text-gray-700 cursor-pointer hover:text-black hover:bg-cyan-400 transition-all" onClick={() => toggleEditModeCita(cita.idcita)}>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
@@ -910,6 +1066,15 @@ const Caso = () => {
             </div>
                 </TabPanel>
                 <TabPanel>
+                    <div className="border rounded mb-2 bg-green-500 font-bold text-white flex text-xs p-1 w-1/4">
+                        <div className="flex items-center justify-left mr-1 w-32">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            </svg>
+                            Subir documentos
+                        </div>
+                        <input type="file" className="cursor-pointer text-xs" onChange={handleFileUpload} multiple />
+                    </div>
                     {documentos.length > 0 ? (
                             <table className="w-full border rounded-xl">
                                 <thead>
@@ -917,7 +1082,7 @@ const Caso = () => {
                                         <th className="border" colSpan={2}>Documento</th>
                                         <th className="border">Clasificación</th>
                                         <th className="border">Subido por</th>
-                                        {rol == "admin" && (
+                                        {rol == "superadmin" && (
                                             <th className="border"></th>
                                         )}
                                     </tr>
@@ -932,7 +1097,7 @@ const Caso = () => {
                                         </td>       
                                         <td className="p-2 font-bold text-amber-700">
                                             <div className="flex items-center">   
-                                            {rol == "admin" && (
+                                            {rol != "user" && (
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 hover:size-6 cursor-pointer mr-1 transition-all" onClick={() => handleEditarNombre(docq.iddoc, docq.nombre, caso.idcaso)}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                               </svg>
@@ -946,14 +1111,14 @@ const Caso = () => {
                                                     <option key={item.id} value={item.id}>{item.clasificacion}</option>
                                                 ))}
                                             </select>
-                                            {rol == "admin" && (
+                                            {rol != "user" && (
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 cursor-pointer hover:size-6 hover:text-black transition-all text-gray-600 ml-1" onClick={() => handleEnableSelect(docq.iddoc)}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                         </svg>
                                             )}
                                         </td>
                                         <td className="p-2 w-96">{docq.creador}{docq.fecha}</td>
-                                        {rol == "admin" && (
+                                        {rol == "superadmin" && (
                                             <td className="p-2 w-10">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 hover:size-6 hover:text-red-500 transition-all cursor-pointer" onClick={() => handleDocEliminar(docq.iddoc, rol, caso.idcaso, docq.nombre)} >
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -972,25 +1137,16 @@ const Caso = () => {
                             Este caso no tiene documentos cargados.
                         </p>
                     )}
-
-                    <div className="p-2 border rounded my-5 w-48 bg-green-500 font-bold text-white">
-                        <div className="flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                        </svg>
-                        Subir documentos
-                        </div>
-                        <input type="file" className="my-2 cursor-pointer" style={{ fontSize: '11px' }} onChange={handleFileUpload} multiple />
-                        </div>
                 </TabPanel>
+
                 <TabPanel>
                     {pagosControl ? (
                         <div className="flex">
                             <div className="w-64">
-                                    {deudaTotal > 0 ? (
+                                    {deudaTotal > 0 && pagosControl.ncuota > 0 ? (
                                         <div className="text-center text-white bg-red-500 p-2 border rounded border-white font-bold">¿Cuanto debe?<div className="text-3xl"><FormatearNumero numero={parseFloat(deudaTotal)} /></div></div>
                                     ) : (
-                                        <div className="text-center text-green-500 bg-transparent p-2 border rounded-xl border-green-500 font-bold">Este caso no tiene deudas
+                                        <div className="text-center text-white bg-green-500 p-2 border rounded-xl border-white font-bold">Este caso no tiene deudas
                                             <div className="flex justify-center items-center">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
@@ -999,23 +1155,57 @@ const Caso = () => {
                                         </div>
                                     )}
                                 <div className="my-2 text-center text-blue-500 p-2 border rounded border-blue-500 font-bold">Servicio<div><FormatearNumero numero={pagosControl.valor} /></div></div>
-                                <div className="my-2 text-center text-green-500 p-2 border rounded border-green-500 font-bold">Entrega inicial<div><FormatearNumero numero={pagosControl.entrega} /></div></div>
-                                <div className="mb-2 text-center text-violet-300 p-2 border rounded border-violet-300 font-bold">{pagosControl.ncuota} cuotas mensuales<div><FormatearNumero numero={parseFloat(pagosControl.cuota)} /></div></div>
-                                <div className="mb-2">
-                                    <span>Cartas enviadas</span>
-                                    <input type="number" className="border rounded p-1 ml-1 w-16" value={pagosControl.cartasenviadas} onChange={(e) => handlePagoControl(pagosControl.id, e.target.value, pagosControl.idestado)} />
-                                </div>
+                                {pagosControl.ncuota > 0 && (
                                 <div>
+                                    <div className="my-2 text-center text-green-500 p-2 border rounded border-green-500 font-bold">
+                                        Entrega inicial
+                                        <div className="flex justify-center items-center">
+                                            <FormatearNumero numero={pagosControl.entrega} />
+                                            {reciboEntrega && (
+                                            <span title="Ver recibo">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 ml-1 cursor-pointer hover:text-green-600 transition-all" onClick={() => window.open(`${backendUrl}/reciboindependiente/${reciboEntrega}`, '_blank')}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                            </svg>
+                                            </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="mb-2 text-center text-orange-400 p-2 border rounded border-orange-400 font-bold">{pagosControl.ncuota} cuotas mensuales<div><FormatearNumero numero={parseFloat(pagosControl.cuota)} /></div></div>
+                                </div>
+                                )}
+                                <div onClick={() => window.open(`${backendUrl}/plandepagos/resumen/${pagosControl.id}`, '_blank')}>
+                                    <div className="w-full flex justify-center items-center border cursor-pointer p-1 rounded border-gray-400 text-gray-500 font-bold hover:bg-gray-200 transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                        </svg>
+                                        <span>Ver resumen</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-center items-center mt-2">
+                                    <span className="w-full">Cartas enviadas</span>
+                                    <input type="number" className="border rounded p-1 ml-1 w-24" value={pagosControl.cartasenviadas} onChange={(e) => handlePagoControl(pagosControl.id, e.target.value, pagosControl.idestado)} />
+                                </div>
+
+                                <div className="flex justify-center items-center mt-2">
                                     <span>Estado</span>
-                                    <select value={pagosControl.idestado} className="border rounded p-1 cursor-pointer ml-1" onChange={(e) => handlePagoControl(pagosControl.id, pagosControl.cartasenviadas, e.target.value)}>
+                                    <select value={pagosControl.idestado} className="border rounded p-1 cursor-pointer ml-1 w-full" onChange={(e) => handlePagoControl(pagosControl.id, pagosControl.cartasenviadas, e.target.value)}>
                                         {pagosEstados.map((item) => (
                                             <option value={item.id} key={item.id}>{item.estado}</option>
                                         ))}
                                     </select>
                                 </div>
+
+                                    <div className="flex justify-center items-center bg-violet-400 p-2 border text-white cursor-pointer hover:bg-white hover:text-violet-400 transition-all text-sm font-bold rounded-lg hover:border-violet-400 mt-2" onClick={() => setRegistrarPagoIndependienteVisible(true)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 mr-1">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                        </svg>
+                                        <span>PAGO INDEPENDIENTE</span>
+                                    </div>
+
                             </div>
 
-                            <div className="ml-5 flex w-full">
+                        <div className="w-full">
+                            <div className="ml-5 flex">
                                 {pagos.length > 0 && (
                                     <div className="w-1/3 mr-5">
                                         <table className="shadow-lg w-full">
@@ -1042,12 +1232,18 @@ const Caso = () => {
                                             <tbody>
                                                 {pagos.map((item) => (
                                                     <tr key={item.id} className="border bg-white">
-                                                        <td className="p-2 border text-center">{item.fecha}</td>
+                                                        <td className="p-2  text-center ">
+                                                            {rol == "superadmin" ? (
+                                                                <input type="date" value={formatDateForInput(item.fecha)} className="cursor-pointer" onChange={(e) => handleFechaChange(item.id, e.target.value)} />
+                                                            ) : (
+                                                                <span>{item.fecha}</span>
+                                                            )}
+                                                        </td>
                                                         <td className="p-2 border">
                                                         {item.pagado == 3 && (
                                                                 <div className="text-xs font-bold text-red-500 italic">Saldo que había quedado pendiente</div>
                                                             )}
-                                                            {item.tipo}
+                                                            {item.tipo} • {item.metodo}
                                                                 <div>
                                                                     {item.numerotarjeta && (
                                                                     <div className="text-xs font-bold flex items-center">
@@ -1068,14 +1264,23 @@ const Caso = () => {
                                                                 </div>
                                                         </td>
                                                         <td className="p-2 italic flex items-center justify-around w-48">
-                                                            <span>
-                                                                <FormatearNumero numero={parseFloat(item.monto)} />
-                                                            </span>
-                                                            <span>
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-green-500 hover:scale-110 transition-all">
+                                                            {rol == "superadmin" ? (
+                                                                <input type="number" value={parseFloat(item.monto)} className="w-24 text-right" onChange={(e) => handleMontoChange(item.id, e.target.value)} />
+                                                            ) : (
+                                                                <span><FormatearNumero numero={parseFloat(item.monto)} /></span>
+                                                            )}
+                                                            <span title="Ver recibo">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-green-500 hover:scale-110 transition-all" onClick={() => window.open(`${backendUrl}/recibos/${item.id}/${deudaTotal}`, '_blank')}>
                                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                                                 </svg>
                                                             </span>
+                                                            {rol == "superadmin" && (
+                                                            <span title="Eliminar pago">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-green-500 hover:scale-110 transition-all" onClick={() => handleEliminarPago(item.id)}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                </svg>
+                                                            </span>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -1084,7 +1289,7 @@ const Caso = () => {
                                     </div>
                                 )}
                                 
-                                {pagosNo.length > 0 && (
+                                {pagosNo.length > 0 && pagosControl.ncuota > 0 && (
                                     <div className="w-1/3 mr-5">
                                     <table className="shadow-lg w-full">
                                         <thead>
@@ -1099,13 +1304,66 @@ const Caso = () => {
                                         <tbody className="bg-white">
                                             {pagosNo.map((item) => (
                                                 <tr key={item.id} className="border">
+                                                    <td className="text-center border">
+                                                        {rol == "superadmin" ? (
+                                                                <input type="date" value={formatDateForInput(item.fecha)} className="cursor-pointer" onChange={(e) => handleFechaChange(item.id, e.target.value)} />
+                                                            ) : (
+                                                                <span>{item.fecha}</span>
+                                                            )}
+                                                    </td>
+                                                    <td className="p-2 italic flex items-center justify-around">
+                                                        <span>
+                                                            <FormatearNumero numero={parseFloat(item.monto)} />
+                                                        </span>
+                                                        <span title="Registrar pago">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-amber-400 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.monto, false, item.fecha)}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
+                                                        </span>
+                                                        {rol == "superadmin" && (
+                                                            <span title="Eliminar pago">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-amber-400 hover:scale-110 transition-all" onClick={() => handleEliminarPago(item.id)}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                </svg>
+                                                            </span>
+                                                            )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                )}
+
+                                {pagosUnicos.length > 0 && (
+                                    <div className="w-1/3 mr-5">
+                                    <table className="shadow-lg w-full">
+                                        <thead>
+                                            <tr>
+                                                <th className="text-blue-400 border" colSpan={2}>
+                                                    <div className="flex justify-center items-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                                    </svg>
+                                                    <span>PENDIENTE ASIGNAR TIPO DE PAGO</span>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                            <tr className="bg-blue-400 text-white">
+                                                <th className='border'>Fecha de pago</th>
+                                                <th className="border">Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white">
+                                            {pagosUnicos.map((item) => (
+                                                <tr key={item.id} className="border">
                                                     <td className="text-center border">{item.fecha}</td>
                                                     <td className="p-2 italic flex items-center justify-around">
                                                         <span>
                                                             <FormatearNumero numero={parseFloat(item.monto)} />
                                                         </span>
-                                                        <span>
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-amber-400 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.monto, false, item.fecha)}>
+                                                        <span title="Registrar pago">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-blue-400 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.monto, false, item.fecha)}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                             </svg>
                                                         </span>
@@ -1118,7 +1376,7 @@ const Caso = () => {
                                 )}
                                 
                                 {registrarPagoVisible && (
-                                    <RegistrarPago idcaso={caso.idcaso} nombrecaso={caso.caso} idcliente={caso.idcliente} onClose={onCloseRegistrarPago} idpago={pagoIdControl} monto={pagoMonto} tipos={tiposdePago} idcontrol={pagosControl.id} esSaldo={esSaldo} vencimiento={fechaVencimiento} />
+                                    <RegistrarPago idcaso={caso.idcaso} nombrecaso={caso.caso} idcliente={caso.idcliente} onClose={() => onCloseRegistrarPago} idpago={pagoIdControl} monto={pagoMonto} tipos={tiposdePago} idcontrol={pagosControl.id} esSaldo={esSaldo} vencimiento={fechaVencimiento} metodos={metodosPago} onStart={(montoTres, esSaldoRestante) => onStart(pagoIdControl, montoTres, esSaldoRestante)} />
                                 )}
 
                                 {saldoRestante && (
@@ -1141,7 +1399,7 @@ const Caso = () => {
                                                             <span>
                                                                 <FormatearNumero numero={item.saldo} />
                                                             </span>
-                                                            <span>
+                                                            <span title="Registrar pago de saldo restante">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-orange-500 hover:scale-110 transition-all" onClick={(e) => abrirRegistrarPago(item.id, item.saldo, true, item.fecha)}>
                                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                                 </svg>
@@ -1154,21 +1412,231 @@ const Caso = () => {
                                     </div>
                                 )}
                             </div>
+
+                                {pagosIndependientes.length > 0 && (
+                                    <div className="ml-5 mt-5">
+                                    <div className="w-full">
+                                        <table className="shadow-lg w-full">
+                                            <thead>
+                                                <tr>
+                                                    <th colSpan={5} className="text-violet-400 border">PAGOS INDEPENDIENTES</th>
+                                                </tr>
+                                                <tr className="bg-violet-400 text-white">
+                                                    <th className="border w-32">Fecha</th>
+                                                    <th className="border w-80">Tipo de pago</th>
+                                                    <th className="border">Concepto</th>
+                                                    <th className="border w-48">Monto</th>
+                                                    {rol =="superadmin" && (
+                                                        <th className="border w-16"></th>
+                                                    )}
+                                                </tr>
+                                            </thead>
+                                                <tbody>
+                                                {pagosIndependientes.map((item) => (
+                                                    <tr key={item.id} className="border bg-white">
+                                                        <td className="p-2 border text-center">{item.fecha}</td>
+                                                        <td className="p-2 border">
+                                                            {item.tipo} • {item.metodo}
+                                                                <div>
+                                                                    {item.numerotarjeta && (
+                                                                    <div className="text-xs font-bold flex items-center">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                                                                        </svg>
+                                                                        <span>{item.numerotarjeta}</span>
+                                                                    </div>
+                                                                    )}
+                                                                    {item.nombretipopago && (
+                                                                    <div className="text-xs font-bold flex items-center">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                                                    </svg>
+                                                                        <span>{item.nombretipopago}</span>
+                                                                    </div>
+                                                                    )}
+                                                                </div>
+                                                        </td>
+                                                        <td className="p-2 border">
+                                                            <div className="whitespace-pre-line">{item.concepto}</div>
+                                                        </td>
+                                                        <td className="p-2 italic flex items-center justify-around w-48">
+                                                            <span>
+                                                                <FormatearNumero numero={parseFloat(item.monto)} />
+                                                            </span>
+                                                            <span title="Ver recibo">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-violet-400 hover:scale-110 transition-all" onClick={() => window.open(`${backendUrl}/reciboindependiente/${item.id}`, '_blank')}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                                </svg>
+                                                            </span>
+                                                        </td>
+                                                        {rol == "superadmin" && (
+                                                            <td className="p-2 border text-center">
+                                                                <span className="w-full" title="Eliminar pago independiente">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 mx-auto text-gray-500 hover:text-black transition-all cursor-pointer" onClick={() => handleEliminarPagoIndependiente(item.id)}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                    </svg>
+                                                                </span>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    </div>
+                                )}
+                        
+                            <div className="ml-5 mt-5">
+                                <div className="flex items-center font-bold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m7.875 14.25 1.214 1.942a2.25 2.25 0 0 0 1.908 1.058h2.006c.776 0 1.497-.4 1.908-1.058l1.214-1.942M2.41 9h4.636a2.25 2.25 0 0 1 1.872 1.002l.164.246a2.25 2.25 0 0 0 1.872 1.002h2.092a2.25 2.25 0 0 0 1.872-1.002l.164-.246A2.25 2.25 0 0 1 16.954 9h4.636M2.41 9a2.25 2.25 0 0 0-.16.832V12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 12V9.832c0-.287-.055-.57-.16-.832M2.41 9a2.25 2.25 0 0 1 .382-.632l3.285-3.832a2.25 2.25 0 0 1 1.708-.786h8.43c.657 0 1.281.287 1.709.786l3.284 3.832c.163.19.291.404.382.632M4.5 20.25h15A2.25 2.25 0 0 0 21.75 18v-2.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125V18a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                    </svg>
+                                    <span>Actualizaciones</span>
+                                </div>
+                                <hr className="my-4"/>
+                                {actualizaciones.map((item) => (
+                                    item.esresultado == 2 && (
+                                            <div key={item.id} className="my-3 rounded-xl border-2 bg-white">
+                                                    <div className="text-gray-700 p-2 text-sm flex items-center rounded-xl cursor-pointer bg-amber-200" onClick={() => toggleExpand(item.id)}>
+                                                        {!expandedItems[item.id] ? (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                                        </svg>
+                                                        ) : (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                                                        </svg>
+                                                        )}
+                                                        {item.creado} <span className="ml-1 font-bold">{item.agente}</span>
+                                                        <span className="ml-1 font-bold text-white bg-green-500 px-2 rounded-full border">PAGO</span>
+                                                    </div>
+                                                    {expandedItems[item.id] && (
+                                                        <div className="p-2">
+                                                            {rol == "superadmin" && (
+                                                            <div className="flex items-center text-xs mb-2 text-gray-500 cursor-pointer hover:text-black" onClick={() => handleEditarNotaPago(item.id, item.actualizacion)}>
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                            </svg>
+                                                            Editar
+                                                            </div>
+                                                            )}
+                                                        <div className="text-sm whitespace-pre-line">
+                                                            {item.actualizacion}
+                                                        </div>
+                                                        </div>
+                                                    )}
+                                            </div>
+                                    )
+                                        ))}
+                            </div>
+                            
+                            </div>
                         </div>
                     ) : (
-                        <div className="flex justify-center">
-                            <div className="flex justify-center items-center bg-green-500 p-2 border text-white cursor-pointer hover:bg-white hover:text-green-500 transition-all text-sm font-bold rounded-lg hover:border-green-500" onClick={() => setPlanDePagosVisible(true)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 mr-1">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                                AGREGAR PLAN DE PAGOS
+                        <div>
+                        <div className="flex justify-center items-center">
+                            <div className="flex justify-center mr-10">
+                                <div className="flex justify-center items-center bg-green-500 p-2 border text-white cursor-pointer hover:bg-white hover:text-green-500 transition-all text-sm font-bold rounded-lg hover:border-green-500" onClick={() => setPlanDePagosVisible(true)}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 mr-1">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                    </svg>
+                                    AGREGAR PLAN DE PAGOS
+                                </div>
+                                {planDePagosVisible && (
+                                    <PlanDePagos idcaso={caso.idcaso} idcliente={caso.idcliente} nombrecaso={caso.caso} estados={pagosEstados} onClose={onClosePlanDePagos} tipos={tiposdePago} metodos={metodosPago} />
+                                    )}
                             </div>
-                            {planDePagosVisible && (
-                                <PlanDePagos idcaso={caso.idcaso} idcliente={caso.idcliente} nombrecaso={caso.caso} estados={pagosEstados} onClose={onClosePlanDePagos} />
+                            <div className="flex justify-center">
+                                <div className="flex justify-center items-center bg-violet-400 p-2 border text-white cursor-pointer hover:bg-white hover:text-violet-400 transition-all text-sm font-bold rounded-lg hover:border-violet-400" onClick={() => setRegistrarPagoIndependienteVisible(true)}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 mr-1">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                    </svg>
+                                    REGISTRAR PAGO INDEPENDIENTE
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                        {pagosIndependientes.length > 0 && (
+                                    <div className="ml-5 mt-5 flex justify-center">
+                                    <div className="w-1/2">
+                                        <table className="shadow-lg w-full">
+                                            <thead>
+                                                <tr>
+                                                    <th colSpan={5} className="text-violet-400 border">PAGOS INDEPENDIENTES</th>
+                                                </tr>
+                                                <tr className="bg-violet-400 text-white">
+                                                    <th className="border w-32">Fecha</th>
+                                                    <th className="border w-56">Tipo de pago</th>
+                                                    <th className="border">Concepto</th>
+                                                    <th className="border w-40">Monto</th>
+                                                    {rol =="superadmin" && (
+                                                        <th className="border w-16"></th>
+                                                    )}
+                                                </tr>
+                                            </thead>
+                                                <tbody>
+                                                {pagosIndependientes.map((item) => (
+                                                    <tr key={item.id} className="border bg-white">
+                                                        <td className="p-2 border text-center">{item.fecha}</td>
+                                                        <td className="p-2 border">
+                                                            {item.tipo} • {item.metodo}
+                                                                <div>
+                                                                    {item.numerotarjeta && (
+                                                                    <div className="text-xs font-bold flex items-center">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                                                                        </svg>
+                                                                        <span>{item.numerotarjeta}</span>
+                                                                    </div>
+                                                                    )}
+                                                                    {item.nombretipopago && (
+                                                                    <div className="text-xs font-bold flex items-center">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                                                    </svg>
+                                                                        <span>{item.nombretipopago}</span>
+                                                                    </div>
+                                                                    )}
+                                                                </div>
+                                                        </td>
+                                                        <td className="p-2 border">
+                                                            <div className="whitespace-pre-line">{item.concepto}</div>
+                                                        </td>
+                                                        <td className="p-2 italic flex items-center justify-around w-48">
+                                                            <span>
+                                                                <FormatearNumero numero={parseFloat(item.monto)} />
+                                                            </span>
+                                                            <span title="Ver recibo">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 cursor-pointer hover:text-violet-400 hover:scale-110 transition-all" onClick={() => window.open(`${backendUrl}/reciboindependiente/${item.id}`, '_blank')}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                                </svg>
+                                                            </span>
+                                                        </td>
+                                                        {rol == "superadmin" && (
+                                                            <td className="p-2 border text-center">
+                                                                <span className="w-full" title="Eliminar pago independiente">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 mx-auto text-gray-500 hover:text-black transition-all cursor-pointer" onClick={() => handleEliminarPagoIndependiente(item.id)}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                    </svg>
+                                                                </span>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    </div>
                                 )}
+
                         </div>
                     )}
+                    {registrarPagoIndependienteVisible && (
+                                    <RegistrarPagoIndependiente idcaso={caso.idcaso} nombrecaso={caso.caso} idcliente={caso.idcliente} onClose={() => onCloseRegistrarPagoIndependiente()} tipos={tiposdePago} metodos={metodosPago} onStart={(idreciboindependiente) => onStartReciboIndependiente(idreciboindependiente)} />
+                                )}
                 </TabPanel>
+
                 <TabPanel className="tab-beneficiario">
                     <div>
                         <div>
@@ -1217,7 +1685,7 @@ const Caso = () => {
                             <button type="button" className="btn-guardar text-blue-500 border-blue-500 bg-transparent hover:bg-white" onClick={handleSaveBeneficiario}>Guardar datos</button>
                         </div>
                         )}
-                    {rol == "admin" && (
+                    {rol != "user" && (
                         <div className="tab-caso-informacion-div justify-center mt-4">
                             <button className="flex items-center btn-guardar bg-yellow-400 rounded border p-1 text-gray-700 cursor-pointer hover:text-black hover:bg-yellow-500 transition-all" onClick={toogleEditModeBeneficiario}>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
@@ -1228,7 +1696,20 @@ const Caso = () => {
                         )}
                 </TabPanel>
                 <TabPanel>
-                    <div>log</div>
+                    <table className="w-full bg-white">
+                        <tr>
+                            <th className="border bg-amber-200">Fecha</th>
+                            <th className="border bg-amber-200">Movimiento</th>
+                            <th className="border bg-amber-200">Agente</th>
+                        </tr>
+                        {logs.map((log) => (
+                            <tr key={log.id}>
+                                <td className="border p-2 text-xs font-bold text-gray-500">{log.fecha}</td>
+                                <td className="border p-2">{log.movimiento}</td>
+                                <td className="border p-2 text-xs italic">{log.agente}</td>
+                            </tr>
+                        ))}
+                    </table>
                 </TabPanel>
             </Tabs>
         </div>

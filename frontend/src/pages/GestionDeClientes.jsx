@@ -71,9 +71,10 @@ const GestionDeClientes = () => {
 
         if (filterStatusCaso) {
             filtered = filtered.filter(lead =>
-                lead.status.toLowerCase().includes(filterStatusCaso.toLowerCase())
+                //lead.status.includes(filterStatusCaso)
+                typeof lead.status === 'string' && lead.status.toLowerCase().includes(filterStatusCaso.toLowerCase())
             );
-        }        
+        }
 
         setFilteredLeads(filtered);
     }, [filterDate, filterName, filterOficina, filterReferencia, filterStatusCaso, leads]);

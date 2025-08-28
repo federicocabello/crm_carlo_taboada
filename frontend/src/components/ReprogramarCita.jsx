@@ -20,20 +20,7 @@ const ReprogramarCita = ({ showModal, setShowModal, selectedCita }) => {
         const [rawData, setRawData] = useState([]);
         const [selectedHour, setSelectedHour] = useState('');
         const [fechasBloqueadas, setFechasBloqueadas] = useState([]);
-    
-    
-        const schedule = [
-            { hour: "09:30:00", maxAppointments: 3 },
-            { hour: "10:00:00", maxAppointments: 3 },
-            { hour: "11:00:00", maxAppointments: 3 },
-            { hour: "12:00:00", maxAppointments: 3 },
-            { hour: "13:00:00", maxAppointments: 3 },
-            { hour: "14:00:00", maxAppointments: 3 },
-            { hour: "15:00:00", maxAppointments: 3 },
-            { hour: "16:00:00", maxAppointments: 3 },
-            { hour: "17:00:00", maxAppointments: 3 },
-            { hour: "18:00:00", maxAppointments: 1 },
-        ];
+        const [schedule, setSchedule] = useState([]);
 
         useEffect(() => {
             if (showModal && selectedCita) {
@@ -106,6 +93,7 @@ const ReprogramarCita = ({ showModal, setShowModal, selectedCita }) => {
                         }))
                         setEvents(transformedEvents);
                         setFechasBloqueadas(response.data.fechas_bloqueadas);
+                        setSchedule(Array.isArray(response.data.schedule) ? response.data.schedule : []);
                     })
                     .catch ((error) => {
                     console.error("Error al obtener los datos:", error);

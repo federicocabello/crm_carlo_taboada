@@ -13,6 +13,7 @@ import GestionDeClientes from "./pages/GestionDeClientes";
 import Perfil from "./pages/Perfil";
 import Caso from "./pages/Caso";
 import Configuracion from "./pages/Configuracion";
+import Cobros from "./pages/Cobros";
 
 const App = () => {
 
@@ -68,7 +69,8 @@ const App = () => {
       setIsMenuOpen(prevState => !prevState);
     }
 
-    const inputRef = useRef(null);
+    const inputRefCaso = useRef(null);
+    const inputRefCliente = useRef(null);
     const menuRef = useRef(null);
 
     useEffect(() => {
@@ -76,55 +78,116 @@ const App = () => {
           if (
               menuRef.current &&
               !menuRef.current.contains(event.target) &&
-              inputRef.current &&
-              !inputRef.current.contains(event.target)
+              inputRefCliente.current &&
+              !inputRefCliente.current.contains(event.target) &&
+              inputRefCaso.current &&
+              !inputRefCaso.current.contains(event.target)
           ) {
               setSearchResults([]);
+              setSearchResultsCases([]);
           }
       };
   
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
       return () => {
-          document.removeEventListener("mousedown", handleClickOutside);
+          document.removeEventListener("click", handleClickOutside);
       };
   }, []);
-  
+const [searchTerm, setSearchTerm] = useState('');
+const [searchTermCases, setSearchTermCases] = useState('');
+const [searchResults, setSearchResults] = useState([]);
+const [searchResultsCases, setSearchResultsCases] = useState([]);
+const [debouncedSearch, setDebouncedSearch] = useState('');
+const [debouncedSearchCases, setDebouncedSearchCases] = useState('');
 
+// debounce para cliente
+useEffect(() => {
+  const handler = setTimeout(() => {
+    setDebouncedSearch(searchTerm.trim());
+  }, 300);
+  return () => clearTimeout(handler);
+}, [searchTerm]);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
+// debounce para caso
+useEffect(() => {
+  const handler = setTimeout(() => {
+    setDebouncedSearchCases(searchTermCases.trim());
+  }, 300);
+  return () => clearTimeout(handler);
+}, [searchTermCases]);
+
+    
 
     useEffect(() => {
-            if (searchTerm) {
-                axios.get(`${backendUrl}/busqueda`, {
-                    params: { query: searchTerm },
-                    withCredentials: true,
-                })
-                    .then((response) => {
-                        setSearchResults(response.data.busqueda);
-                    })
-                    .catch((error) => {
-                        console.error("Error al buscar en la base de datos:", error);
-                    });
-            } else {
-                setSearchResults([]);
-            }
-      }, [searchTerm]);
+  if (debouncedSearch) {
+    axios.get(`${backendUrl}/busqueda/perfil`, {
+      params: { query: debouncedSearch },
+      withCredentials: true,
+    })
+    .then((response) => {
+      setSearchResults(response.data.busqueda || []);
+    })
+    .catch((error) => {
+      console.error("Error al buscar perfil:", error);
+    });
+  } else {
+    setSearchResults([]);
+  }
+
+  if (debouncedSearchCases) {
+    axios.get(`${backendUrl}/busqueda/caso`, {
+      params: { query: debouncedSearchCases },
+      withCredentials: true,
+    })
+    .then((response) => {
+      setSearchResultsCases(response.data.busqueda || []);
+    })
+    .catch((error) => {
+      console.error("Error al buscar caso:", error);
+    });
+  } else {
+    setSearchResultsCases([]);
+  }
+}, [debouncedSearch, debouncedSearchCases, backendUrl]);
+
 
       const handleSelectClient = (client) => {
+        setSearchTerm('');
+        setSearchTermCases('');
         setSearchResults([]);
+        setSearchResultsCases([]);
         navigate(`/perfil/${client.id}`);
+    };
+
+    const handleSelectCase = (caso) => {
+        setSearchTerm('');
+        setSearchTermCases('');
+        setSearchResults([]);
+        setSearchResultsCases([]);
+        navigate(`/caso/${caso}`);
     };
 
     const tipearSearch = (e) => {
         setSearchTerm(e.target.value);
+        setSearchTermCases('');
     };
+
+    const tipearSearchCases = (e) => {
+        setSearchTermCases(e.target.value);
+        setSearchTerm('');
+    };
+
+    const handleCasoKeyDown = (e) => {
+  if (e.key === 'Enter' && searchTermCases.trim()) {
+    window.location.href = `/caso/${searchTermCases.trim()}`;
+  }
+};
 
   return (
     <div>
       {user && (
       <nav>
-        <div className="bg-cyan-500 py-3 flex justify-center items-center">        
+        <div className="bg-cyan-500 py-3 flex justify-center items-center">
 
           <div className="text-white mx-4 flex h-6 cursor-pointer text-xs items-center" onClick={toggleMenu}>
           
@@ -154,15 +217,43 @@ const App = () => {
           </svg>      
           </div>
 
-          <input type="text" placeholder="Buscar..." className="text-xs p-2 italic rounded h-6 w-48 capitalize" value={searchTerm} onChange={tipearSearch} ref={inputRef} />
+          <input type="number" placeholder="Buscar caso..." className="text-xs p-2 italic rounded h-6 w-32 mr-5" value={searchTermCases} onChange={tipearSearchCases} ref={inputRefCaso} onKeyDown={handleCasoKeyDown} />
+          <input type="text" placeholder="Buscar cliente..." className="text-xs p-2 italic rounded h-6 w-48" value={searchTerm} onChange={tipearSearch} ref={inputRefCliente} />
+
+          {searchResultsCases.length > 0 && (
+                <ul className="border rounded bg-white text-xs text-left w-96 max-h-80 overflow-y-auto absolute top-10 transform translate-x-[110px]" ref={menuRef}>
+                    {searchResultsCases.map((caso) => (
+                        <li
+                            key={caso.id}
+                            className="cursor-pointer bg-white hover:bg-cyan-100 p-2"
+                            onClick={() => handleSelectCase(caso.casos)}
+                        >
+                            <div>
+                                {caso.clasificacion === "LEAD" && (<div className="text-blue-700 font-bold">{caso.nombre}</div>)}
+                                {caso.clasificacion === "CLIENTE" && (<div className="text-green-700 font-bold">{caso.nombre}</div>)}
+                                {caso.telefono && (<div className="italic">Teléfono: <span className="font-bold">{caso.telefono}</span></div>)}
+                                {caso.casos && (
+                                  <div className="italic">Caso: <span className="font-bold text-red-700">{caso.casos}</span></div>
+                                )}
+                                {caso.consultas && (
+                                  <div className="italic">Consulta: <span className="font-bold text-gray-700">{caso.consultas}</span></div>
+                                )}
+                                {caso.beneficiarios && (
+                                  <div className="italic">Beneficiarios asociados: <span className="font-bold text-violet-700">{caso.beneficiarios}</span></div>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+          )}
 
           {searchResults.length > 0 && (
-                <ul className="border rounded bg-white text-xs text-left w-96 max-h-80 overflow-y-auto absolute top-10 transform translate-x-[185px]" ref={menuRef}>
+                <ul className="border rounded bg-white text-xs text-left w-96 max-h-80 overflow-y-auto absolute top-10 transform translate-x-[260px] z-[9999]" ref={menuRef}>
                     {searchResults.map((client) => (
                         <li
                             key={client.id}
                             className="cursor-pointer bg-white hover:bg-cyan-100 p-2"
-                            onClick={() => handleSelectClient(client)}
+                            onMouseDown={() => handleSelectClient(client)}
                         >
                             <div>
                                 {client.clasificacion === "LEAD" && (<div className="text-blue-700 font-bold">{client.nombre}</div>)}
@@ -201,13 +292,14 @@ const App = () => {
 </svg>
           Clientes</NavLink>
           <NavLink to="/captura-de-datos" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-  <path fillRule="evenodd" d="M4.5 3.75a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V6.75a3 3 0 0 0-3-3h-15Zm4.125 3a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Zm-3.873 8.703a4.126 4.126 0 0 1 7.746 0 .75.75 0 0 1-.351.92 7.47 7.47 0 0 1-3.522.877 7.47 7.47 0 0 1-3.522-.877.75.75 0 0 1-.351-.92ZM15 8.25a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 0-1.5H15ZM14.25 12a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H15a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 0-1.5H15Z" clipRule="evenodd" />
+  <path fillRule="evenodd" d="M12 1.5a.75.75 0 0 1 .75.75V4.5a.75.75 0 0 1-1.5 0V2.25A.75.75 0 0 1 12 1.5ZM5.636 4.136a.75.75 0 0 1 1.06 0l1.592 1.591a.75.75 0 0 1-1.061 1.06l-1.591-1.59a.75.75 0 0 1 0-1.061Zm12.728 0a.75.75 0 0 1 0 1.06l-1.591 1.592a.75.75 0 0 1-1.06-1.061l1.59-1.591a.75.75 0 0 1 1.061 0Zm-6.816 4.496a.75.75 0 0 1 .82.311l5.228 7.917a.75.75 0 0 1-.777 1.148l-2.097-.43 1.045 3.9a.75.75 0 0 1-1.45.388l-1.044-3.899-1.601 1.42a.75.75 0 0 1-1.247-.606l.569-9.47a.75.75 0 0 1 .554-.68ZM3 10.5a.75.75 0 0 1 .75-.75H6a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10.5Zm14.25 0a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H18a.75.75 0 0 1-.75-.75Zm-8.962 3.712a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.06l1.591-1.592a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
 </svg>
           Captura de datos</NavLink>
-          <NavLink to="/gestion-de-leads" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-  <path fillRule="evenodd" d="M19.902 4.098a3.75 3.75 0 0 0-5.304 0l-4.5 4.5a3.75 3.75 0 0 0 1.035 6.037.75.75 0 0 1-.646 1.353 5.25 5.25 0 0 1-1.449-8.45l4.5-4.5a5.25 5.25 0 1 1 7.424 7.424l-1.757 1.757a.75.75 0 1 1-1.06-1.06l1.757-1.757a3.75 3.75 0 0 0 0-5.304Zm-7.389 4.267a.75.75 0 0 1 1-.353 5.25 5.25 0 0 1 1.449 8.45l-4.5 4.5a5.25 5.25 0 1 1-7.424-7.424l1.757-1.757a.75.75 0 1 1 1.06 1.06l-1.757 1.757a3.75 3.75 0 1 0 5.304 5.304l4.5-4.5a3.75 3.75 0 0 0-1.035-6.037.75.75 0 0 1-.354-1Z" clipRule="evenodd" />
+          <NavLink to="/gestion-de-leads" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
 </svg>
-          Gestión de Leads</NavLink>
+          Leads</NavLink>
+          {/*
           <NavLink to="/tareas" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
   <path fillRule="evenodd" d="M18.97 3.659a2.25 2.25 0 0 0-3.182 0l-10.94 10.94a3.75 3.75 0 1 0 5.304 5.303l7.693-7.693a.75.75 0 0 1 1.06 1.06l-7.693 7.693a5.25 5.25 0 1 1-7.424-7.424l10.939-10.94a3.75 3.75 0 1 1 5.303 5.304L9.097 18.835l-.008.008-.007.007-.002.002-.003.002A2.25 2.25 0 0 1 5.91 15.66l7.81-7.81a.75.75 0 0 1 1.061 1.06l-7.81 7.81a.75.75 0 0 0 1.054 1.068L18.97 6.84a2.25 2.25 0 0 0 0-3.182Z" clipRule="evenodd" />
 </svg>
@@ -217,13 +309,13 @@ const App = () => {
   <path fillRule="evenodd" d="M12.75 3a.75.75 0 0 1 .75-.75 8.25 8.25 0 0 1 8.25 8.25.75.75 0 0 1-.75.75h-7.5a.75.75 0 0 1-.75-.75V3Z" clipRule="evenodd" />
 </svg>
           Reportes</NavLink>
-          <NavLink to="/facturacion" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-  <path d="M12 7.5a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" />
-  <path fillRule="evenodd" d="M1.5 4.875C1.5 3.839 2.34 3 3.375 3h17.25c1.035 0 1.875.84 1.875 1.875v9.75c0 1.036-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 14.625v-9.75ZM8.25 9.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM18.75 9a.75.75 0 0 0-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 0 0 .75-.75V9.75a.75.75 0 0 0-.75-.75h-.008ZM4.5 9.75A.75.75 0 0 1 5.25 9h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H5.25a.75.75 0 0 1-.75-.75V9.75Z" clipRule="evenodd" />
-  <path d="M2.25 18a.75.75 0 0 0 0 1.5c5.4 0 10.63.722 15.6 2.075 1.19.324 2.4-.558 2.4-1.82V18.75a.75.75 0 0 0-.75-.75H2.25Z" />
+          */}
+          <NavLink to="/cobros" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M4.5 3.75a3 3 0 0 0-3 3v.75h21v-.75a3 3 0 0 0-3-3h-15Z" />
+  <path fillRule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-7.5Zm-18 3.75a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3Z" clipRule="evenodd" />
 </svg>
-          Facturación</NavLink>
-          {user && user.rol == "admin" && (
+          Cobros</NavLink>
+          {user && user.rol == "superadmin" && (
           <NavLink to="/configuracion" className="navlink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
   <path fillRule="evenodd" d="M11.828 2.25c-.916 0-1.699.663-1.85 1.567l-.091.549a.798.798 0 0 1-.517.608 7.45 7.45 0 0 0-.478.198.798.798 0 0 1-.796-.064l-.453-.324a1.875 1.875 0 0 0-2.416.2l-.243.243a1.875 1.875 0 0 0-.2 2.416l.324.453a.798.798 0 0 1 .064.796 7.448 7.448 0 0 0-.198.478.798.798 0 0 1-.608.517l-.55.092a1.875 1.875 0 0 0-1.566 1.849v.344c0 .916.663 1.699 1.567 1.85l.549.091c.281.047.508.25.608.517.06.162.127.321.198.478a.798.798 0 0 1-.064.796l-.324.453a1.875 1.875 0 0 0 .2 2.416l.243.243c.648.648 1.67.733 2.416.2l.453-.324a.798.798 0 0 1 .796-.064c.157.071.316.137.478.198.267.1.47.327.517.608l.092.55c.15.903.932 1.566 1.849 1.566h.344c.916 0 1.699-.663 1.85-1.567l.091-.549a.798.798 0 0 1 .517-.608 7.52 7.52 0 0 0 .478-.198.798.798 0 0 1 .796.064l.453.324a1.875 1.875 0 0 0 2.416-.2l.243-.243c.648-.648.733-1.67.2-2.416l-.324-.453a.798.798 0 0 1-.064-.796c.071-.157.137-.316.198-.478.1-.267.327-.47.608-.517l.55-.091a1.875 1.875 0 0 0 1.566-1.85v-.344c0-.916-.663-1.699-1.567-1.85l-.549-.091a.798.798 0 0 1-.608-.517 7.507 7.507 0 0 0-.198-.478.798.798 0 0 1 .064-.796l.324-.453a1.875 1.875 0 0 0-.2-2.416l-.243-.243a1.875 1.875 0 0 0-2.416-.2l-.453.324a.798.798 0 0 1-.796.064 7.462 7.462 0 0 0-.478-.198.798.798 0 0 1-.517-.608l-.091-.55a1.875 1.875 0 0 0-1.85-1.566h-.344ZM12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" clipRule="evenodd" />
 </svg>
@@ -259,9 +351,14 @@ const App = () => {
         />
           <Route path="/caso/:id" element={user ? <Caso /> : <Navigate to="/login" />}
         />
-          <Route path="/configuracion" element={user && user.rol == "admin" ? <Configuracion /> : <Navigate to="/login" />}
+          <Route path="/configuracion" element={user && user.rol == "superadmin" ? <Configuracion /> : <Navigate to="/login" />}
         />
-
+          <Route path="/cobros" element={user ? <Cobros /> : <Navigate to="/login" />}
+        />
+          <Route path="/cobros/:estado/:desde/:hasta" element={user ? <Cobros /> : <Navigate to="/login" />}
+        />
+        <Route path="/cobros/:estado" element={user ? <Cobros /> : <Navigate to="/login" />}
+        />
           {/* DECLARACIÓN DE RUTAS */}
           <Route path="*" element={<h2 className="text-center font-bold">Página no encontrada</h2>} />
         </Routes>

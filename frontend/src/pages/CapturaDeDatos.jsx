@@ -13,6 +13,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 
 const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso, onDateHourSelect}) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const [loading, setLoading] = useState(false);
     const nombreInputRef = useRef(null);
     const navigate = useNavigate();
 
@@ -45,19 +46,7 @@ const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso
     const [selectedHour, setSelectedHour] = useState('');
     const [fechasBloqueadas, setFechasBloqueadas] = useState([]);
 
-
-    const schedule = [
-        { hour: "09:30:00", maxAppointments: 3 },
-        { hour: "10:00:00", maxAppointments: 3 },
-        { hour: "11:00:00", maxAppointments: 3 },
-        { hour: "12:00:00", maxAppointments: 3 },
-        { hour: "13:00:00", maxAppointments: 3 },
-        { hour: "14:00:00", maxAppointments: 3 },
-        { hour: "15:00:00", maxAppointments: 3 },
-        { hour: "16:00:00", maxAppointments: 3 },
-        { hour: "17:00:00", maxAppointments: 3 },
-        { hour: "18:00:00", maxAppointments: 1 },
-    ];
+    const [schedule, setSchedule] = useState([])
 
     const handleFileChange = (e) => {
         setFiles(e.target.files);
@@ -81,6 +70,7 @@ const CapturaDeDatos = ({nuevaConsulta, idCliente, nombreCliente, editarCitaCaso
                 }))
                 setEvents(transformedEvents);
                 setFechasBloqueadas(response.data.fechas_bloqueadas);
+                setSchedule(Array.isArray(response.data.schedule) ? response.data.schedule : []);
             })
             .catch ((error) => {
             console.error("Error al obtener los datos:", error);
@@ -127,6 +117,7 @@ const handleClickHourCita = (hour) => {
 };
 
     const handleEnviar =  (e) => {
+            setLoading(true);
             e.preventDefault();
 
             const formData = new FormData();
@@ -168,6 +159,7 @@ const handleClickHourCita = (hour) => {
     };
 
     const handleEnviarNuevaConsulta =  (e) => {
+        setLoading(true);
         e.preventDefault();
 
         const formData = new FormData();
@@ -253,9 +245,10 @@ const handleClickHourCita = (hour) => {
         const isValid = razonCita.trim() !== "" &&
                         selectedTipoCaso !== "" &&
                         selectedAsesor !== "" &&
-                        selectedTipoCita !== "" &&
-                        selectedDate !== "" &&
-                        selectedHour !== "";
+                        selectedTipoCita !== "";
+                        //&&
+                        //selectedDate !== "" &&
+                        //selectedHour !== "";
         setIsFormValidConsulta(isValid);
     };
 
@@ -304,9 +297,9 @@ return (
                     </div>
                     <div className="w-1/2 ml-2">
                     {!nuevaConsulta ? (
-                        <button type="button" className={`btn-guardar w-full ${!isFormValid && 'bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-100'}`} onClick={handleEnviar} disabled={!isFormValid}>Guardar</button>
+                        <button type="button" className={`btn-guardar w-full ${!isFormValid && 'bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-100'}`} onClick={handleEnviar} disabled={!isFormValid || loading}>{loading ? 'Cargando...' : 'Guardar'}</button>
                     ) : (
-                        <button type="button" className={`btn-guardar w-full ${!isFormValidConsulta && 'bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-100'}`} onClick={handleEnviarNuevaConsulta} disabled={!isFormValidConsulta}>Guardar</button>
+                        <button type="button" className={`btn-guardar w-full ${!isFormValidConsulta && 'bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-100'}`} onClick={handleEnviarNuevaConsulta} disabled={!isFormValidConsulta || loading}>{loading ? 'Cargando...' : 'Guardar'}</button>
                     )}
                     </div>
                 </div>
@@ -340,7 +333,7 @@ return (
                 <div className="mb-2">
                     <div>Tipo de caso<span className="ml-1 text-red-500">(*)</span></div>
                     <select className="select-cap" onChange={(e) => setSelectedTipoCaso(e.target.value)}>
-                        <option value="" key="" className="text-gray-400 italic">Seleccione un tipo de caso...</option>
+                        <option value="0" key="0" className="text-gray-400 italic">Seleccione un tipo de caso...</option>
                         {tipoCaso.map((item) => (
                             <option key={item.id} value={item.id}>{item.tipocaso}</option>
                         ))}
@@ -348,7 +341,7 @@ return (
                     {selectedTipoCaso && (
                     <div>
                         <select className="select-cap" onChange={(e) => setSelectedSubclase(e.target.value)}>
-                            <option value="" key="" className="text-gray-400 italic">Seleccione una subclase...</option>
+                            <option value="0" key="0" className="text-gray-400 italic">Seleccione una subclase...</option>
                             {subClase
                                 .filter((sub) => sub.idtipocaso == selectedTipoCaso)
                                 .map((sub) => (

@@ -2,17 +2,23 @@ import React, {useState} from "react";
 import axios from 'axios';
 import FormatearNumero from '../components/FormatearNumero'
 
-const PlanDePagos = ({idcaso, idcliente, nombrecaso, estados, onClose }) => {
+const PlanDePagos = ({idcaso, idcliente, nombrecaso, estados, onClose, tipos, metodos}) => {
     if (!idcaso) return null;
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const [estadoList, setEstadoList] = useState(estados);
+    const today = new Date().toISOString().split('T')[0];
 
     const [valorServicio, setValorServicio] = useState(0);
     const [entregaInicial, setEntregaInicial] = useState(0);
-    const [cuotas, setCuotas] = useState(0);
+    const [cuotas, setCuotas] = useState(-1);
     const valorCuota = (valorServicio - entregaInicial) / cuotas;
-    const [vencimiento, setVencimiento] = useState(null);
+    const [vencimiento, setVencimiento] = useState(today);
     const [estado, setEstado] = useState(1);
+
+    const [tipo, setTipo] = useState(0);
+    const [metodo, setMetodo] = useState(0);
+    const [nombreTarjeta, setNombreTarjeta] = useState("");
+    const [numeroTarjeta, setNumeroTarjeta] = useState("");
 
     const handlePlanDePagos = () => {
         const datos = {
@@ -23,19 +29,31 @@ const PlanDePagos = ({idcaso, idcliente, nombrecaso, estados, onClose }) => {
             cuotas: cuotas,
             valor_cuota: valorCuota,
             vencimiento: vencimiento,
-            estado: estado
+            estado: estado,
+            tipo: tipo,
+            metodo: metodo,
+            nombre_tarjeta: nombreTarjeta,
+            numero_tarjeta: numeroTarjeta
         };
                     axios.post(`${backendUrl}/pagos/guardar-plan`, datos, { withCredentials: true })
                         .then((response) => {
                             console.log(response.data.mensaje);
                             alert(response.data.mensaje);
                             onClose();
+                            window.open(`${backendUrl}/plandepagos/resumen/${response.data.idcontrol}`, '_blank');
                         })
                         .catch((error) => {
                             console.error("Error al guardar el plan de pagos: ", error);
                             alert("Error al guardar el plan de pagos. Revise los datos ingresados. Reintente.");
                         });
             };
+
+            const redireccionarRecibos = (idcontrol, identrega) => {
+                window.open(`${backendUrl}/plandepagos/resumen/${idcontrol}`, '_blank');
+                            if (identrega) {
+                                window.open(`${backendUrl}/reciboindependiente/${identrega}`, '_blank');
+                            }
+            }
 
     return (
         <div style={styles.overlay} onClick={onClose}>
@@ -65,14 +83,55 @@ const PlanDePagos = ({idcaso, idcliente, nombrecaso, estados, onClose }) => {
                         <span>Valor del servicio</span>
                         <input type="number" className="border rounded p-1 ml-1 shadow-md" onChange={(e) => setValorServicio(parseFloat(e.target.value))} />
                     </div>
+                    {cuotas != 0 && (
                     <div className="flex flex-col w-full">
                         <span>Entrega inicial</span>
                         <input type="number" className="border rounded p-1 ml-1 shadow-md" onChange={(e) => setEntregaInicial(parseFloat(e.target.value))} />
                     </div>
+                    )}
+
+                        <div>
+                            <div>
+                                <select className="p-1 border rounded w-full shadow-md cursor-pointer" onChange={(e) => setTipo(e.target.value)} value={tipo}>
+                                    <option value="0" className="text-gray-300 italic">Seleccione el tipo de pago de entrega...</option>
+                                    {tipos.map((tipo) => (
+                                        <option key={tipo.id} value={tipo.id}>{tipo.tipo}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {tipo == 1 && (
+                                <div className="flex flex-col w-full mt-5">
+                                    <div>
+                                        <span className="text-xs mr-1">Nombre que figura en la tarjeta</span>
+                                        <input type="text" className="border rounded p-1" onChange={(e) => setNombreTarjeta(e.target.value.toUpperCase())} value={nombreTarjeta} />
+                                    </div>
+                                    <div className="mt-2">
+                                        <span className="text-xs mr-1">Últimos 4 números de la tarjeta</span>
+                                        <input type="number" className="border rounded p-1" onChange={(e) => setNumeroTarjeta(parseInt(e.target.value))} value={numeroTarjeta} />
+                                    </div>
+                                </div>
+                            )}
+                            <select className="p-1 border rounded w-full shadow-lg cursor-pointer mt-5" onChange={(e) => setMetodo(e.target.value)} value={metodo}>
+                                <option value="0" className="text-gray-300 italic">Seleccione el método de pago de entrega..</option>
+                                {metodos.map((metodo) => (
+                                    <option key={metodo.id} value={metodo.id}>{metodo.metodo}</option>
+                                ))}
+                            </select>
+                            {metodo == 1 && tipo != 1 && (
+                                <div className="flex flex-col w-full mt-5">
+                                    <div>
+                                        <span className="text-xs mr-1">Nombre de la cuenta</span>
+                                        <input type="text" className="border rounded p-1" onChange={(e) => setNombreTarjeta(e.target.value.toUpperCase())} value={nombreTarjeta} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                     <div className="flex flex-col w-full">
                         <span>Cuotas mensuales</span>
-                        <select className="border rounded p-1 ml-1 shadow-md cursor-pointer" onChange={(e) => setCuotas(e.target.value)} value={cuotas}>
-                            <option value="0" className="text-gray-300 italic">Seleccione la cantidad de cuotas</option>
+                        <select className="border rounded p-1 ml-1 shadow-md cursor-pointer" onChange={(e) => setCuotas(e.target.value)} value={cuotas} disabled={cuotas == 0}>
+                            <option value="-1" className="text-gray-300 italic">Seleccione la cantidad de cuotas</option>
+                            <option value="0">PAGO ÚNICO</option>
                         {Array.from({ length: 12 }, (_, index) => (
                             <option key={index} value={index + 1}>
                                 {index + 1}
@@ -92,7 +151,7 @@ const PlanDePagos = ({idcaso, idcliente, nombrecaso, estados, onClose }) => {
                                 <input type="date" className="border rounded p-1 ml-1 shadow-md" onChange={(e) => setVencimiento(new Date(e.target.value))} />
                             </div>
                     )}
-                    {cuotas > 0 && valorServicio > 0 && entregaInicial > 0 && valorCuota > 0 && vencimiento && (
+                    {valorServicio > 0 && cuotas != -1 && tipo > 0 && metodo > 0 && (
                         <div className="flex flex-col w-full">
                             <button className="flex btn-guardar items-center justify-center" onClick={handlePlanDePagos}>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">

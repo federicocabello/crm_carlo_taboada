@@ -31,7 +31,7 @@ const GestionDeLeads = () => {
     const [filterCreador, setFilterCreador] = useState('');
     const [filterCalifica, setFilterCalifica] = useState('');
 
-
+    const [rol, setRol] = useState('');
     useEffect(() => {
         axios.get(`${backendUrl}/gestion-de-leads`, {withCredentials: true})
         .then((response) => {
@@ -42,7 +42,8 @@ const GestionDeLeads = () => {
             setStatuscita(response.data.selects.status_cita);
             setAsesores(response.data.selects.asesores);
             setCreador(response.data.selects.creadores);
-            setCalifica(response.data.selects.califica)
+            setCalifica(response.data.selects.califica);
+            setRol(response.data.rol);
         })
         .catch((error) => {
             console.error("Error al obtener los leads:", error);
@@ -156,6 +157,22 @@ const GestionDeLeads = () => {
         });
         setFilteredLeads(sortedLeads);
     };
+
+    const handleEliminarLead = (idlead, nombrelead) => {
+                    if (!window.confirm("¿Está seguro de que desea eliminar este lead?\nSe eliminarán todas las citas, pagos independientes, consultas y casos de "+nombrelead+".\nEsta acción no se puede deshacer.")) {
+                        return;
+                    }
+                    axios.post(`${backendUrl}/gestion-de-leads/eliminar`, { idlead: idlead }, { withCredentials: true })
+                        .then((response) => {
+                            console.log(response.data.mensaje);
+                            alert(response.data.mensaje);
+                            window.location.reload();
+                        })
+                        .catch((error) => {
+                        console.error("Error al eliminar lead:", error);
+                        alert("Hubo un error al eliminar el lead. Debe eliminar primero todas las actualizaciones de las consultas de este lead.");
+                        });
+                };
     
     return (
         <div>
@@ -255,19 +272,27 @@ const GestionDeLeads = () => {
                         <th>Oficina</th>
                         <th>Fuente</th>
                         <th>Tipo de consulta</th>
-                        <th>Status y razón de cita</th>
-                        <th>Asignado a</th>
-                        <th>¿Califica?</th>
-                        <th>Creado por</th>
+                        <th colSpan={4}>Status y razón de cita</th>
                     </tr>
                 </thead>
                 <tbody>
                 {currentLeads.map((lead) => (
                     <tr key={lead.idcita}>
-                        <td className='text-xs text-center'>{lead.fecha}</td>
+                        <td className='text-xs text-center w-48'>
+                            <div className="font-bold text-sm">{lead.fecha}</div>
+                            <div className="italic">Agendado por <span className="font-bold text-red-600">{lead.creador}</span></div>
+                        </td>
                         <td>
-                            <div className="text-blue-800 font-bold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${lead.idcliente}`)}>
-                                {lead.nombrec}
+                            
+                            <div className="flex items-center">
+                                {rol == "superadmin" && (
+                                    <span className="flex items-center justify-center bg-red-500 mr-1 p-1 rounded-full text-white hover:bg-red-700 transition-all cursor-pointer" title="Eliminar lead" onClick={() => handleEliminarLead(lead.idcliente, lead.nombrec)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                    </span>
+                                )}
+                                <span className="text-blue-800 font-bold cursor-pointer hover:underline" onClick={() => navigate(`/perfil/${lead.idcliente}`)}>{lead.nombrec}</span>
                             </div>
                             {lead.telefonoUno &&
                             <div className="flex items-center">
@@ -292,35 +317,35 @@ const GestionDeLeads = () => {
                         </td>
                         <td>{lead.oficina}</td>
                         <td>{lead.referido}</td>
-                        <td className="w-64">
+                        <td className="w-64 py-3">
                             <div className="font-bold bg-gray-600 cursor-pointer hover:bg-gray-300 hover:text-gray-600 text-center w-full border rounded-xl text-white transition-all hover:border-gray-600" onClick={() => navigate(`/caso/${lead.idcaso}`)}>{lead.tipocaso}</div>
-                            <div className="text-xs text-center font-bold text-gray-600 mt-1">{lead.subclase}</div>
+                            <div className="text-xs text-center font-bold text-gray-600 my-1">{lead.subclase}</div>
+                            <div className="italic text-xs text-center">Asginado a <span className="font-bold text-blue-600">{lead.asignado}</span></div>
                         </td>
-                        <td className='w-96'>
-                            <div className="p-1 text-white text-xs font-bold text-center border rounded-full w-32" style={{ backgroundColor: '#'+lead.colorstatuscita }}>
+                        <td className='w-96 py-3' colSpan={4}>
+                            <div className="flex items-center">
+                            <div className="text-white font-bold text-center border rounded-xl w-48 mr-1" style={{ backgroundColor: '#'+lead.colorstatuscita }}>
                                 {lead.statuscita}
+                                
+                            </div>  
+                            <div className="relative group">
+                                    <div style={{ backgroundColor: '#'+lead.colorcalifica }} className="text-white text font-bold text-center border rounded-xl w-32">{lead.califica}</div>
+                                    {lead.motivo_califica && (
+                                        <div className="absolute left-0 top-full mt-1 w-48 text-white text-xs italic rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity font-bold p-1" style={{ backgroundColor: '#'+lead.colorcalifica }}>
+                                        {lead.motivo_califica}
+                                        </div>
+                                    )}
+                            </div>
                             </div>
                             {lead.razoncita &&
-                            <div className='flex'>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 shrink-0 self-top">
+                            <div className='flex mt-1 text-xs'>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 shrink-0 self-top">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                 </svg>
                                 <span>{lead.razoncita}</span>
                             </div>
                     }
                         </td>
-                        <td>{lead.asignado}</td>
-                        <td className="w-32">
-                            <div className="relative group">
-                                <div style={{ backgroundColor: '#'+lead.colorcalifica }} className="p-1 text-white text-xs font-bold text-center border rounded-full">{lead.califica}</div>
-                                {lead.motivo_califica && (
-                                    <div className="absolute left-0 top-full mt-1 w-48 p-2 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity font-bold z-10" style={{ backgroundColor: '#'+lead.colorcalifica }}>
-                                    {lead.motivo_califica}
-                                    </div>
-                                )}
-                            </div>
-                        </td>
-                        <td>{lead.creador}</td>
                     </tr>
                 ))}
                 </tbody>

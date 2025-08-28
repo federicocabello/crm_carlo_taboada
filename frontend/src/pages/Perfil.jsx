@@ -14,9 +14,13 @@ const Perfil = () => {
     const [casos, setCasos] = useState([]);
     const [casosSinAbrir, setCasosSinAbrir] = useState([]);
     const [rol, setRol] = useState(null);
+    const [notas, setNotas] = useState([]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [mostrarNuevaConsulta, setMostrarNuevaConsulta] = useState(false);
+
+    const [nuevaNota, setNuevaNota] = useState("");
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
             axios.get(`${backendUrl}/perfil/${id}`, {withCredentials: true})
@@ -25,6 +29,7 @@ const Perfil = () => {
                 setCasos(response.data.casos)
                 setRol(response.data.rol[0])
                 setCasosSinAbrir(response.data.casos_sinabrir);
+                setNotas(response.data.notas);
             })
             .catch((error) => {
                 console.error("Error al obtener los datos del cliente:", error);
@@ -53,6 +58,38 @@ const Perfil = () => {
             });
     };
 
+    const handleNuevaNota = () => {
+        setLoading(true);
+        const notaData = {
+            "datos": datos["id"],
+            "nota": nuevaNota.trim()
+        }
+        axios.post(`${backendUrl}/perfil/nota/nueva`, notaData, { withCredentials: true })
+            .then((response) => {
+                alert(response.data.mensaje);
+                window.location.reload();
+            })
+            .catch((error) => {
+                console.error("Error al guardar nota:", error);
+                alert("Error al guardar nota. Reintente.");
+                setLoading(false);
+            });
+    }
+
+    const deletedNota = (notaId) => {
+        if (window.confirm("¿Está seguro de eliminar esta nota?")) {
+            axios.post(`${backendUrl}/perfil/nota/eliminar`, { idnota: notaId, idcliente: id }, { withCredentials: true })
+                .then((response) => {
+                    alert(response.data.mensaje);
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    console.error("Error al eliminar nota:", error);
+                    alert("Error al eliminar nota. Reintente.");
+                });
+        }
+    }
+
     return (
         <div>
             <h1 className="flex text-3xl items-center font-bold">
@@ -60,7 +97,7 @@ const Perfil = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
                     <span>{datos.nombre}</span>
-                    {rol == "admin" && (
+                    {rol != "user" && (
                     <span onClick={() => setIsEditing(!isEditing)} className="text-xs flex items-center ml-1 bg-yellow-400 rounded border p-1 text-gray-700 cursor-pointer hover:text-black hover:bg-yellow-500 transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
                         <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
@@ -96,14 +133,7 @@ const Perfil = () => {
                         </div>
                 )}
                     </Tab>
-                    <Tab>
-                        <div className="tab-div">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="tab-div-img">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-                        </svg>
-                        <span>Intakes</span>
-                        </div>
-                    </Tab>
+                    {/*
                     <Tab>
                         <div className="tab-div">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="tab-div-img">
@@ -120,12 +150,13 @@ const Perfil = () => {
                             <span>Logs</span>
                         </div>
                     </Tab>
+                    */}
                 </TabList>
                 <TabPanel className="tab-panel-perfil">
                 <div className="flex">
                     <div className="w-full section-datos">
                         <p><span>Nombre:</span><input type="text" name="nombre" value={datos.nombre} onChange={handleInputChange} disabled={!isEditing} className={!isEditing ? 'bg-transparent' : ''} /></p>
-                        <p><span>Teléfono 1:</span><input type="text" name="telefono1" value={datos.telefono1} disabled={!isEditing} className={!isEditing ? 'bg-transparent' : ''} /></p>
+                        <p><span>Teléfono 1:</span><input type="text" name="telefono1" value={datos.telefono1} onChange={handleInputChange} disabled={!isEditing} className={!isEditing ? 'bg-transparent' : ''} /></p>
                         <p className="flex items-center">
                             <div>
                                 <span>Téléfono 2:</span><input type="text" name="telefono2" value={datos.telefono2} onChange={handleInputChange} disabled={!isEditing} className={!isEditing ? 'bg-transparent' : ''} />
@@ -160,8 +191,40 @@ const Perfil = () => {
                         <p className="text-center"><button className="btn-guardar text-blue-500 border-blue-500 bg-transparent hover:bg-white" onClick={handleSave}>Guardar datos</button></p>
                         )}
                     </div>
-                    <div className="w-1/2 border rounded p-2">
-                        Deudas: 
+                    <div className="w-full">
+                        <div className="w-full flex">
+                            <div className="w-full mr-2">
+                                <textarea placeholder='NOTA...' className='uppercase rounded p-2 w-full' rows={3} onChange={(e) => setNuevaNota(e.target.value)}></textarea>
+                            </div>
+                            <div onClick={handleNuevaNota}>
+                                <button className={`${loading || !nuevaNota.trim() ? "btn-guardar bg-gray-100 flex items-center w-40 justify-center text-gray-300 hover:bg-gray-100" : "btn-guardar bg-lime-100 hover:bg-lime-200 text-lime-700 flex items-center w-40 justify-center"}`} disabled={loading || !nuevaNota.trim()}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                    </svg>
+                                    <span>{loading ? 'Guardando...' : 'Guardar nota'}</span>
+                                </button>
+                            </div>
+                        </div>
+                            {notas.length > 0 && (
+                                notas.map((nota) => (
+                                    <div className="border whitespace-pre-line mt-2 bg-white rounded" key={nota.id} hidden={nota.deleted == 1 && rol != "superadmin"}>
+                                        <div className={`p-2 text-xs flex items-center rounded ${nota.deleted == 1 ? "bg-gray-200 text-gray-500" : "bg-lime-100 text-lime-700"}`}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 mr-1">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                                            </svg>
+                                            <span>{nota.fecha}</span>
+                                            <span className="font-bold mx-1">{nota.creador}</span>
+                                            {nota.deleted == 0 && rol == "superadmin" && (
+                                                <span title="Eliminar nota" className="ml-auto" onClick={() => deletedNota(nota.id)}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 hover:text-black transition-all cursor-pointer">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="p-2">{nota.nota}</div>
+                                    </div>
+                            )))}
                     </div>
                 </div>
                 </TabPanel>
@@ -192,13 +255,19 @@ const Perfil = () => {
                                             <div className="text-xs italic text-gray-500">Creado el {caso.fechacaso}</div>
                                         </td>
                                         <td>
-                                            <div className="flex items-center font-bold">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
-                                                </svg>
-                                                {caso.citasfecha}
-                                            </div>
-                                            <div className="text-sm text-white border rounded-xl font-bold text-center w-48" style={{ backgroundColor: '#'+caso.colortipocita }}>{caso.tipocita}</div>
+                                            {caso.citasfecha ? (
+                                                <div>
+                                                <div className="flex items-center font-bold">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
+                                                    </svg>
+                                                    {caso.citasfecha}
+                                                </div>
+                                                <div className="text-sm text-white border rounded-xl font-bold text-center w-48" style={{ backgroundColor: '#'+caso.colortipocita }}>{caso.tipocita}</div>
+                                                </div>
+                                                ) : (
+                                                    <span>No tiene fecha de cita agendada.</span>
+                                                )}
                                         </td>
                                         <td>{caso.asignado}</td>
                                         <td>
@@ -224,7 +293,7 @@ const Perfil = () => {
                                 <tr onClick={() => navigate(`/caso/${caso.idcaso}`)}>
                                     <th className="th-caso-id">
                                         <div className="flex items-center">
-                                            <div className="hover:underline mr-2">{caso.idcaso} - {caso.caso}</div>
+                                            <div className="hover:underline mr-2">{caso.idcaso} • {caso.caso}</div>
                                             <span className="text-white border rounded px-2 font-bold text-sm" style={{ backgroundColor: '#'+caso.colorstatuscaso }}>{caso.statuscaso}</span>
                                         </div>
                                         <div className="text-xs text-red-500">{caso.tipocaso} - {caso.subclase}</div>
@@ -238,10 +307,18 @@ const Perfil = () => {
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
                                                 </svg>
-                                                {caso.citasfecha}
-                                                <div className="text-sm text-white border rounded-xl font-bold text-center ml-2 w-32" style={{ backgroundColor: '#'+caso.colortipocita }}>{caso.tipocita}</div>
+                                                {caso.citasfecha ? (
+                                                    <span>{caso.citasfecha}</span>
+                                                ) : (
+                                                    <span>No tiene citas agendadas.</span>
+                                                )}
+                                                {caso.citasfecha && (
+                                                    <div className="text-sm text-white border rounded-xl font-bold text-center ml-2 w-48" style={{ backgroundColor: '#'+caso.colortipocita }}>{caso.tipocita}</div>
+                                                )}
                                             </div>
-                                            <div className="text-sm text-white border rounded-xl font-bold text-center w-32" style={{ backgroundColor: '#'+caso.colorstatuscita }}>{caso.statuscita}</div>
+                                            {caso.citasfecha && (
+                                                <div className="text-sm text-white border rounded-xl font-bold text-center w-32" style={{ backgroundColor: '#'+caso.colorstatuscita }}>{caso.statuscita}</div>
+                                            )}
                                     </th>
                                 </tr>
                                 ))}
@@ -258,7 +335,7 @@ const Perfil = () => {
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 mr-1">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                         </svg>
-                                        Agregar consulta</button>
+                                        Nuevo caso</button>
                     {mostrarNuevaConsulta && (
                         <div>
                             <CapturaDeDatos nuevaConsulta={true} idCliente={id} nombreCliente={datos.nombre} />
