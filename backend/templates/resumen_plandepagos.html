@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CASE{{datos.ncaso}}PAYMENTPLAN{{ datos.id }}</title>
+    <style>
+
+        @page {
+            size: Letter portrait;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            font-size: 14px;
+        }
+        .header {
+            text-align: center;
+        }
+        td {
+            border: 1px solid black;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img style="width: 100%;" src="file:///{{ ruta_logo }}" alt="Logo">
+    </div>
+    <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+        <tr>
+            <td style="text-align: center; font-weight: 700;" colspan="8">DETAIL OF PAYMENTS</td>
+        </tr>
+        <tr>
+            <td style="width: 10%;">Type service:</td>
+            <td colspan="5">{{ datos.caso }}</td>
+            <td>Contract date:</td>
+            <td>{{ datos.fecha }}</td>
+        </tr>
+        <tr>
+            <td>Total cost of service:</td>
+            <td>$ {{ datos.valor }}</td>
+            {% if datos.ncuota %}
+                <td colspan="2">Cuota mensual:</td>
+                <td colspan="2">$ {{ datos.cuota }}</td>
+                <td>Number of months:</td>
+                <td>{{ datos.ncuota }}</td>
+            {% else %}
+                <td colspan="6">This service does not have a monthly payment plan.</td>
+            {% endif %}
+        </tr>
+        <tr>
+            <td>Fee</td>
+            <td>Payment date</td>
+            <td>Initial balance</td>
+            <td>Receive name</td>
+            <td>Amount paid</td>
+            <td>Payment date</td>
+            <td>Payment type</td>
+            <td>Last balance</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>{{ datos.fecha }}</td>
+            <td>$ {{ datos.valor }}</td>
+            <td>{{ datos.agente }}</td>
+            <td>$ {{ datos.entrega }}</td>
+            <td>{{ datos.fecha }}</td>
+            <td>
+                {% if datos.payment_type %}
+                    {{ datos.payment_type }}
+                {% else %}
+                    Not specified
+                {% endif %}
+            </td>
+            <td>$ {{ datos.balance }}</td>
+        </tr>
+        {% if datos.ncuota > 0 %}
+            {% for a in pagos %}
+            <tr>
+                <td style="text-align: center;">{{ a.n }}</td>
+                <td>{{ a.fecha }}</td>
+                <td>$ {{ a.monto }}</td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </table>
+    <div style="text-align: center; padding: 20px; background-color: gainsboro; margin-top: 20px; font-weight: 700;">I make my commitment to Carlo Taboada Law Firm PLLC, he has to pay the amount above under the amount and payment plan that is me provided, to respect the dates of payments for attorney fees and costs of legal services in which I represent.</div>
+</body>
+</html>
